@@ -1,12 +1,71 @@
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from document import Document
+import re
+from urllib.parse import urlparse
 
 
 class Parse:
 
     def __init__(self):
         self.stop_words = stopwords.words('english')
+
+    def parse_hashtags(self , text):
+        split_by_delimiter = []
+        split_by_upper_letter =[ ]
+
+        #extract word that start with hashtags and remove dedup
+        hashtags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "#" and len(text) > i+1 ]
+        #print(hashtags_list)
+
+        #remove hashtag
+        without_hashtag = [hashtag.replace('#', '') for hashtag in hashtags_list]
+        #print(without_hashtag)
+
+        # split by delimiter
+        for s in without_hashtag:
+            #there is at lest one delimiter '_'
+            if '_' in s:
+                for i in s.split('_'):
+                    split_by_delimiter.append(i)
+            #split by upper letter
+            for i in re.sub(r'([A-Z]+)', r' \1', s).split():
+                split_by_upper_letter.append(i)
+        return split_by_delimiter+split_by_upper_letter+hashtags_list
+
+    #how to consider 'http://www.cwi.nl:80/%7Eguido/Python.html'
+    def parse_url(self ,url):
+        u = urlparse(url)
+        list_url = []
+        if u.scheme:
+            list_url.append(u.scheme)
+        if u.netloc:
+            list_url.append(u.netloc)
+        if u.path.split("/"):
+           [list_url.append(i) for i in u.path.split("/")]
+
+
+        #print(u.scheme,u.netloc,u.path.split("/"),u.hostname,u.fragment,u.params,u.password,u.port,u.query,u.username)
+        return list_url
+
+    def parse_tags(self ,text):
+        tags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "@" and len(text) > i+1 ]
+        return tags_list
+
+    def parse_percent(self ,text):
+        return
+
+    def parse_numbers_without_units(self ,text):
+        #bigger than Thousand
+        #bigger than Million
+        #bigger than Billion
+        return
+
+    def parse_names_and_entities(self ,text):
+        return
+
+    def parse_LowerCaseOrUpperCase(self ,text):
+        return
 
     def parse_sentence(self, text):
         """
@@ -19,7 +78,13 @@ class Parse:
         print(text_tokens)
         text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
         print(text_tokens_without_stopwords)
+        if "#" in text_tokens:
+            hashtags = self.parse_hashtags(text_tokens)
+            print(hashtags)
 
+        if "@" in text_tokens:
+            tags = self.parse_tags(text_tokens)
+            print(tags)
         #add all the func to tokanizer
         return text_tokens_without_stopwords
 
@@ -46,6 +111,12 @@ class Parse:
 
         term_dict = {}
         tokenized_text = self.parse_sentence(full_text)
+
+        print(type(url))
+        #for item in url.items():
+        #    tokenized_url = self.parse_url(url)
+        #    print(tokenized_url)
+
 
 
         doc_length = len(tokenized_text)  # after text operations.
