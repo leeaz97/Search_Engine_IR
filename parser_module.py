@@ -35,15 +35,26 @@ class Parse:
 
     #how to consider 'http://www.cwi.nl:80/%7Eguido/Python.html'
     def parse_url(self ,url):
-        u = urlparse(url)
         list_url = []
-        if u.scheme:
-            list_url.append(u.scheme)
-        if u.netloc:
-            list_url.append(u.netloc)
-        if u.path.split("/"):
-           [list_url.append(i) for i in u.path.split("/")]
 
+        #split the string to list
+        for i in url.split(','):
+            #extract each url to group , group 1 is the shorted url , group 2 is the full url
+            extract_full_url = re.search('{?"(.*)":(.*)', i)
+            if extract_full_url:
+                url_f = extract_full_url.group(2).replace("\"","").replace("}","")
+                # if have full url
+                if url_f != 'null':
+                    # parse url with library urlparse
+                    u = urlparse(url_f)
+                    if u.scheme:
+                        list_url.append(u.scheme)
+                    if u.netloc:
+                        list_url.append(u.netloc)
+                    if u.path.split("/"):
+                        for i in u.path.split("/"):
+                            if i != '':
+                                list_url.append(i)
 
         #print(u.scheme,u.netloc,u.path.split("/"),u.hostname,u.fragment,u.params,u.password,u.port,u.query,u.username)
         return list_url
@@ -53,6 +64,7 @@ class Parse:
         return tags_list
 
     def parse_percent(self ,text):
+
         return
 
     def parse_numbers_without_units(self ,text):
@@ -73,18 +85,23 @@ class Parse:
         :param text:
         :return:
         """
-        print(text)
+        #print(text)
         text_tokens = word_tokenize(text)
-        print(text_tokens)
+        #print(text_tokens)
         text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
-        print(text_tokens_without_stopwords)
+        #print(text_tokens_without_stopwords)
         if "#" in text_tokens:
             hashtags = self.parse_hashtags(text_tokens)
-            print(hashtags)
+         #   print(hashtags)
 
         if "@" in text_tokens:
             tags = self.parse_tags(text_tokens)
-            print(tags)
+          #  print(tags)
+
+        if "%" in text or "percent" in text or "percentage" in text:
+            print(text)
+            print(text_tokens)
+
         #add all the func to tokanizer
         return text_tokens_without_stopwords
 
@@ -112,10 +129,9 @@ class Parse:
         term_dict = {}
         tokenized_text = self.parse_sentence(full_text)
 
-        print(type(url))
-        #for item in url.items():
-        #    tokenized_url = self.parse_url(url)
-        #    print(tokenized_url)
+        #print(type(url))
+        tokenized_url = self.parse_url(url)
+        #print(tokenized_url)
 
 
 
