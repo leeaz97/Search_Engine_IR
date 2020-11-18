@@ -14,7 +14,8 @@ class Parse:
         split_by_delimiter = []
         split_by_upper_letter =[ ]
 
-        #extract word that start with hashtags and remove dedup
+        #extract word that start with hashtags
+        # hashtags_list = re.findall('^#[A-Za-z0-9_-]+', text)
         hashtags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "#" and len(text) > i+1 ]
         #print(hashtags_list)
 
@@ -60,18 +61,87 @@ class Parse:
         return list_url
 
     def parse_tags(self ,text):
+        #list_tags = re.findall('^@^#[A-Za-z0-9_-]+', text)
         tags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "@" and len(text) > i+1 ]
         return tags_list
 
     def parse_percent(self ,text):
+        percent_list = []
+        #p_list = re.findall(r'\d[\d.,]*?[%|percentage|percent]{1}', text)
+        p_list = re.findall(r'\d[\d.,\s]*?%|\d[\d.,\s]*?percentage|\d[\d.,\s]*?percent', text)
 
-        return
+        for p in p_list:
+           if "percentage" in p:
+               percent_list.append(re.sub(r'[\s]*percentage', '%', p))
+           elif "percent" in p:
+               percent_list.append(re.sub(r'[\s]*percent', '%', p))
+           elif "%" in p:
+               percent_list.append(p)
 
-    def parse_numbers_without_units(self ,text):
-        #bigger than Thousand
-        #bigger than Million
-        #bigger than Billion
-        return
+        return percent_list
+
+    def word_Billion_Million_Thousand(self, text):
+        Billion_Million_Thousand_list = []
+        n_list = re.findall(r'\d[\d.,\s]*?billion|\d[\d.,\s]*?million|\d[\d.,\s]*?thousand', text)
+
+        for n in n_list:
+           if "billion" in n:
+               Billion_Million_Thousand_list.append(re.sub(r'[\s]*billion', 'B', n))
+           elif "million" in n:
+               Billion_Million_Thousand_list.append(re.sub(r'[\s]*million', 'M', n))
+           elif "thousand" in n:
+               Billion_Million_Thousand_list.append(re.sub(r'[\s]*thousand', 'K', n))
+
+
+        return Billion_Million_Thousand_list
+
+
+    def num_Billion_Million_Thousand(self, text):
+        n_list = []
+        for i in text:
+            if re.match(r'^\d+$|^\d+?\.\d+?$|^\d+(\,+\d+)+$|^\d+(\,+\d+)+?\.\d+?$', i):
+                if "," in i:
+                    i = i.replace(",","")
+                if "." in i:
+                    i = float(i)
+                else:
+                    i = int(i)
+                if i < 1000:
+                    n_list.append(i)
+                # bigger than Thousand
+                elif i >= 1000 and i < 1000000:
+                    #str(int(i/1000))
+                    n_list.append(str(i/1000)+"K")
+                # bigger than Million
+                elif i >= 1000000 and i < 1000000000:
+                    n_list.append(str(i/1000000)+"M")
+                #bigger than Billion
+                else:
+                    n_list.append(str(i/1000000000)+"B")
+
+        return n_list
+
+    def delete_Emojify(self,text):
+        emoji_pattern = re.compile("["
+                                   u"\U0001F600-\U0001F64F"  # emoticons
+                                   u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                                   u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                                   u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                                   u"\U0001F1F2-\U0001F1F4"  # Macau flag
+                                   u"\U0001F1E6-\U0001F1FF"  # flags
+                                   u"\U0001F600-\U0001F64F"
+                                   u"\U00002702-\U000027B0"
+                                   u"\U000024C2-\U0001F251"
+                                   u"\U0001f926-\U0001f937"
+                                   u"\U0001F1F2"
+                                   u"\U0001F1F4"
+                                   u"\U0001F620"
+                                   u"\u200d"
+                                   u"\u2640-\u2642"
+                                   "]+", flags=re.UNICODE)
+
+        text = emoji_pattern.sub(r'', text)
+        return text
 
     def parse_names_and_entities(self ,text):
         return
@@ -85,6 +155,9 @@ class Parse:
         :param text:
         :return:
         """
+        print(self.delete_Emojify(text))
+        print(text)
+        print("---------------------------------")
         #print(text)
         text_tokens = word_tokenize(text)
         #print(text_tokens)
@@ -99,9 +172,19 @@ class Parse:
           #  print(tags)
 
         if "%" in text or "percent" in text or "percentage" in text:
-            print(text)
-            print(text_tokens)
+            #print(text)
+            #print(text_tokens)
+            #print(self.parse_percent(text))
+            #print("-----------------")
+            percent = self.parse_percent(text)
 
+        if "billion" in text or "million" in text or "thousand" in text:
+            big_num_word = self.word_Billion_Million_Thousand(text)
+
+        if self.num_Billion_Million_Thousand(text_tokens):
+            #print(text)
+            #print(self.num_Billion_Million_Thousand(text_tokens))
+            big_num = self.num_Billion_Million_Thousand(text_tokens)
         #add all the func to tokanizer
         return text_tokens_without_stopwords
 
