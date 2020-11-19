@@ -3,25 +3,33 @@ from nltk.tokenize import word_tokenize
 from document import Document
 import re
 from urllib.parse import urlparse
-
+import string
+import spacy
+sp = spacy.load('en_core_web_sm')
 
 class Parse:
 
     def __init__(self):
         self.stop_words = stopwords.words('english')
 
+    def remove_punctuation(self,text):
+        without_punc = []
+        for w in text:
+            t= w.translate(str.maketrans('', '', string.punctuation))
+            if t:
+                without_punc.append(t)
+        #x = [''.join(c for c in s if c not in string.punctuation) for s in text]
+        return without_punc
+
     def parse_hashtags(self , text):
         split_by_delimiter = []
         split_by_upper_letter =[ ]
 
         #extract word that start with hashtags
-        # hashtags_list = re.findall('^#[A-Za-z0-9_-]+', text)
         hashtags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "#" and len(text) > i+1 ]
-        #print(hashtags_list)
 
         #remove hashtag
         without_hashtag = [hashtag.replace('#', '') for hashtag in hashtags_list]
-        #print(without_hashtag)
 
         # split by delimiter
         for s in without_hashtag:
@@ -33,6 +41,43 @@ class Parse:
             for i in re.sub(r'([A-Z]+)', r' \1', s).split():
                 split_by_upper_letter.append(i)
         return split_by_delimiter+split_by_upper_letter+hashtags_list
+
+    def parse_tags(self ,text):
+        #list_tags = re.findall('^@^#[A-Za-z0-9_-]+', text)
+        tags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "@" and len(text) > i+1 ]
+        return tags_list
+
+    def num_Billion_Million_Thousand(self, text):
+        n_list = []
+        for i in text:
+            if re.match(r'^\d+$|^\d+?\.\d+?$|^\d+(\,+\d+)+$|^\d+(\,+\d+)+?\.\d+?$', i):
+                if "," in i:
+                    i = i.replace(",","")
+                if "." in i:
+                    i = float(i)
+                else:
+                    i = int(i)
+                if i < 1000:
+                    n_list.append(i)
+                # bigger than Thousand
+                elif i >= 1000 and i < 1000000:
+                    if isinstance(i,int):
+                        n_list.append(str(int(i/1000)))
+                    else:
+                        n_list.append(str(i/1000)+"K")
+                # bigger than Million
+                elif i >= 1000000 and i < 1000000000:
+                    if isinstance(i,int):
+                        n_list.append(str(int(i/1000)))
+                    else:
+                        n_list.append(str(i/1000000)+"M")
+                #bigger than Billion
+                else:
+                    if isinstance(i,int):
+                        n_list.append(str(int(i/1000)))
+                    else:
+                        n_list.append(str(i/1000000000)+"B")
+        return n_list
 
     #how to consider 'http://www.cwi.nl:80/%7Eguido/Python.html'
     def parse_url(self ,url):
@@ -60,68 +105,96 @@ class Parse:
         #print(u.scheme,u.netloc,u.path.split("/"),u.hostname,u.fragment,u.params,u.password,u.port,u.query,u.username)
         return list_url
 
-    def parse_tags(self ,text):
-        #list_tags = re.findall('^@^#[A-Za-z0-9_-]+', text)
-        tags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "@" and len(text) > i+1 ]
-        return tags_list
+    def decontracted(self ,phrase):
+        # specific
+        phrase = re.sub(r"won\'t", "will not", phrase)
+        phrase = re.sub(r"can\'t", "can not", phrase)
+
+        # general
+        phrase = re.sub(r"n\'t", " not", phrase)
+        phrase = re.sub(r"\'re", " are", phrase)
+        phrase = re.sub(r"\'s", " is", phrase)
+        phrase = re.sub(r"\'d", " would", phrase)
+        phrase = re.sub(r"\'ll", " will", phrase)
+        phrase = re.sub(r"\'t", " not", phrase)
+        phrase = re.sub(r"\'ve", " have", phrase)
+        phrase = re.sub(r"\'m", " am", phrase)
+        return phrase
+
+    def text2int(self, textnum, numwords={}):
+        if not numwords:
+            units = [
+                "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+                "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+                "sixteen", "seventeen", "eighteen", "nineteen",
+            ]
+
+            tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+
+            scales = ["hundred", "thousand", "million", "billion", "trillion"]
+
+            numwords["and"] = (1, 0)
+            for idx, word in enumerate(units):  numwords[word] = (1, idx)
+            for idx, word in enumerate(tens):       numwords[word] = (1, idx * 10)
+            for idx, word in enumerate(scales): numwords[word] = (10 ** (idx * 3 or 2), 0)
+
+        ordinal_words = {'first': 1, 'second': 2, 'third': 3, 'fifth': 5, 'eighth': 8, 'ninth': 9, 'twelfth': 12}
+        ordinal_endings = [('ieth', 'y'), ('th', '')]
+
+        textnum = textnum.replace('-', ' ')
+
+        current = result = 0
+        curstring = ""
+        onnumber = False
+        for word in textnum.split():
+            if word.lower() in ordinal_words:
+                scale, increment = (1, ordinal_words[word.lower()])
+                current = current * scale + increment
+                if scale > 100:
+                    result += current
+                    current = 0
+                onnumber = True
+            else:
+                for ending, replacement in ordinal_endings:
+                    if word.lower().endswith(ending):
+                        word = "%s%s" % (word.lower()[:-len(ending)], replacement)
+
+                if word.lower() not in numwords:
+                    if onnumber:
+                        curstring += repr(result + current) + " "
+                    curstring += word + " "
+                    result = current = 0
+                    onnumber = False
+                else:
+                    scale, increment = numwords[word.lower()]
+
+                    current = current * scale + increment
+                    if scale > 100:
+                        result += current
+                        current = 0
+                    onnumber = True
+
+        if onnumber:
+            curstring += repr(result + current)
+
+        return curstring
 
     def parse_percent(self ,text):
-        percent_list = []
-        #p_list = re.findall(r'\d[\d.,]*?[%|percentage|percent]{1}', text)
-        p_list = re.findall(r'\d[\d.,\s]*?%|\d[\d.,\s]*?percentage|\d[\d.,\s]*?percent', text)
+        text_after_percentage = re.sub(r'(\d[\d., ]*?)\spercentage[s]{0,1}', "\\1%", text)
+        text_after_percent = re.sub(r'(\d[\d.,]*?)\spercent[s]{0,1}', "\\1%", text_after_percentage)
+        return text_after_percent
 
-        for p in p_list:
-           if "percentage" in p:
-               percent_list.append(re.sub(r'[\s]*percentage', '%', p))
-           elif "percent" in p:
-               percent_list.append(re.sub(r'[\s]*percent', '%', p))
-           elif "%" in p:
-               percent_list.append(p)
+    def parse_dollar_word(self,text):
+        text_after_dollar = re.sub(r'(\d[\d., ]*?)\sdollar[s]{0,1}', "\\1$", text)
+        #d_list = re.findall(r'\d[\d.,\s]*?dollar[s]*]', text)
+        #for n in d_list:
+        #    if "dollar" in n.lower():
+        #        dollar_list.append(re.sub(r'[\s]*dollar[s]*', '$', n))
+        #    else:
+        #        dollar_list.append(n)
+        return text_after_dollar
 
-        return percent_list
-
-    def word_Billion_Million_Thousand(self, text):
-        Billion_Million_Thousand_list = []
-        n_list = re.findall(r'\d[\d.,\s]*?billion|\d[\d.,\s]*?million|\d[\d.,\s]*?thousand', text)
-
-        for n in n_list:
-           if "billion" in n:
-               Billion_Million_Thousand_list.append(re.sub(r'[\s]*billion', 'B', n))
-           elif "million" in n:
-               Billion_Million_Thousand_list.append(re.sub(r'[\s]*million', 'M', n))
-           elif "thousand" in n:
-               Billion_Million_Thousand_list.append(re.sub(r'[\s]*thousand', 'K', n))
-
-
-        return Billion_Million_Thousand_list
-
-
-    def num_Billion_Million_Thousand(self, text):
-        n_list = []
-        for i in text:
-            if re.match(r'^\d+$|^\d+?\.\d+?$|^\d+(\,+\d+)+$|^\d+(\,+\d+)+?\.\d+?$', i):
-                if "," in i:
-                    i = i.replace(",","")
-                if "." in i:
-                    i = float(i)
-                else:
-                    i = int(i)
-                if i < 1000:
-                    n_list.append(i)
-                # bigger than Thousand
-                elif i >= 1000 and i < 1000000:
-                    #str(int(i/1000))
-                    n_list.append(str(i/1000)+"K")
-                # bigger than Million
-                elif i >= 1000000 and i < 1000000000:
-                    n_list.append(str(i/1000000)+"M")
-                #bigger than Billion
-                else:
-                    n_list.append(str(i/1000000000)+"B")
-
-        return n_list
-
-    def delete_Emojify(self,text):
+    def remove_Emojify(self,text):
         emoji_pattern = re.compile("["
                                    u"\U0001F600-\U0001F64F"  # emoticons
                                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -140,11 +213,19 @@ class Parse:
                                    u"\u2640-\u2642"
                                    "]+", flags=re.UNICODE)
 
-        text = emoji_pattern.sub(r'', text)
-        return text
+        remove_emoji = emoji_pattern.sub(r'', text)
+        return remove_emoji
+
+    def extract_expressions(self):
+        expressions = re.findall('\'.*\'?|\".*\"|\`.*\`?|')
+        return
 
     def parse_names_and_entities(self ,text):
-        return
+        sen = sp(text)
+        for entity in sen.ents:
+            print(entity.text + ' - ' + entity.label_ + ' - ' + str(spacy.explain(entity.label_)))
+        #print(sen.ents)
+        return sen.ents
 
     def parse_LowerCaseOrUpperCase(self ,text):
         return
@@ -155,37 +236,36 @@ class Parse:
         :param text:
         :return:
         """
-        print(self.delete_Emojify(text))
+        remove_emoji = self.remove_Emojify(text)
+        replace_word_to_num = self.text2int(remove_emoji)
+        remove_and = re.sub(r'\s0\s', " ", replace_word_to_num)
+        decontracted = self.decontracted(remove_and)
         print(text)
-        print("---------------------------------")
-        #print(text)
-        text_tokens = word_tokenize(text)
-        #print(text_tokens)
+        print(decontracted)
+        #print("---------------")
+
+        #"%" in text or
+        if "percent" in decontracted or "percentage" in decontracted:
+            decontracted = self.parse_percent(decontracted)
+
+        if "dollar" in decontracted:
+            decontracted = self.parse_dollar_word(decontracted)
+
+        text_tokens = word_tokenize(decontracted)
         text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
-        #print(text_tokens_without_stopwords)
+
         if "#" in text_tokens:
             hashtags = self.parse_hashtags(text_tokens)
-         #   print(hashtags)
 
         if "@" in text_tokens:
             tags = self.parse_tags(text_tokens)
-          #  print(tags)
-
-        if "%" in text or "percent" in text or "percentage" in text:
-            #print(text)
-            #print(text_tokens)
-            #print(self.parse_percent(text))
-            #print("-----------------")
-            percent = self.parse_percent(text)
-
-        if "billion" in text or "million" in text or "thousand" in text:
-            big_num_word = self.word_Billion_Million_Thousand(text)
 
         if self.num_Billion_Million_Thousand(text_tokens):
-            #print(text)
-            #print(self.num_Billion_Million_Thousand(text_tokens))
             big_num = self.num_Billion_Million_Thousand(text_tokens)
-        #add all the func to tokanizer
+
+        remove_punctuation = self.remove_punctuation(text_tokens)
+        self.parse_names_and_entities(decontracted)
+
         return text_tokens_without_stopwords
 
     def parse_doc(self, doc_as_list):
@@ -211,6 +291,7 @@ class Parse:
 
         term_dict = {}
         tokenized_text = self.parse_sentence(full_text)
+
 
         #print(type(url))
         tokenized_url = self.parse_url(url)
