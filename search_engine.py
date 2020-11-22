@@ -4,7 +4,7 @@ from parser_module import Parse
 from indexer import Indexer
 from searcher import Searcher
 import utils
-
+import os
 
 def run_engine():
     """
@@ -18,14 +18,24 @@ def run_engine():
     p = Parse()
     indexer = Indexer(config)
 
-    documents_list = r.read_file(file_name='sample3.parquet')
-    # Iterate over every document in the file
-    for idx, document in enumerate(documents_list):
-        # parse the document
-        parsed_document = p.parse_doc(document)
-        number_of_documents += 1
-        # index the document data
-        indexer.add_new_doc(parsed_document)
+    f = open("demofile2.txt", "a")
+
+    for subdir, dirs, files in os.walk(config.get__corpusPath()):
+        for file in files:
+            filepath = subdir + os.sep + file
+            # print(os.path.join(subdir, file))
+            #if filepath.endswith(".parquet"):
+            if file.endswith(".parquet"):
+                documents_list = r.read_file(file_name=filepath)
+                print(filepath)
+                # Iterate over every document in the file
+                for idx, document in enumerate(documents_list):
+                    # parse the document
+                    parsed_document = p.parse_doc(document)
+                    number_of_documents += 1
+                    # index the document data
+                    indexer.add_new_doc(parsed_document)
+    f.close()
     print('Finished parsing and indexing. Starting to export files')
 
     utils.save_obj(indexer.inverted_idx, "inverted_idx")
