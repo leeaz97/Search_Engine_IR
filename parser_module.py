@@ -5,13 +5,17 @@ import re
 from urllib.parse import urlparse
 import string
 import spacy
+from nltk.stem.snowball import SnowballStemmer
+
 from nltk.stem.wordnet import WordNetLemmatizer
 sp = spacy.load('en_core_web_sm')
+
 
 class Parse:
 
     def __init__(self):
         self.stop_words = stopwords.words('english')
+        self.stemmer = SnowballStemmer(language='english')
 
     #def wordNet(self,text):
     #    #words = ['gave', 'went', 'going', 'dating']
@@ -80,7 +84,7 @@ class Parse:
                     n_list.append(str(i))
                 # bigger than Thousand
                 elif i >= 1000 and i < 1000000:
-                    print(i,type(i),i%1000)
+                    #print(i,type(i),i%1000)
                     if i % 1000 == 0:
                         n_list.append(str(int(i/1000))+"K")
                     else:
@@ -226,6 +230,7 @@ class Parse:
 
     def remove_Emojify(self,text):
         emoji_pattern = re.compile("["
+                                   u"\u2069"
                                    u"\U0001F600-\U0001F64F"  # emoticons
                                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
                                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
@@ -290,6 +295,36 @@ class Parse:
     def parse_LowerCaseOrUpperCase(self ,text):
         return
 
+    def stemming(self,tokens):
+        list_after_stemming = []
+        t = ""
+        for token in tokens:
+            stem_token = self.stemmer.stem(token)
+            #if not do stemming save the token as is
+            if stem_token == token.lower():
+                list_after_stemming.append(token)
+            else:
+                # if the token was Uppercase, save him after stemming as Uppercase
+                if token.isupper():
+                    list_after_stemming.append(stem_token.upper())
+                # if the token was Lowercase, save him after stemming as Lowercase
+                elif token.islower():
+                    list_after_stemming.append(stem_token)
+
+                    #elif token[0].isupper():
+                    #list_after_stemming.append(stem_token[0].upper() + stem_token[1:])
+                # if the token was Uppercase, save him after stemming as Uppercase
+                else:
+                    for i in range(len(stem_token)):
+                        if token[i].isupper():
+                            t += stem_token[i].upper()
+                        else:
+                            t += stem_token[i]
+                    list_after_stemming.append(t)
+                    t = ""
+
+        return list_after_stemming
+
     def parse_sentence(self, text):
         """
         This function tokenize, remove stop words and apply lower case for every word within the text
@@ -300,7 +335,6 @@ class Parse:
         tags=[]
         dollar=[]
         percent=[]
-
         text_tokens_split=[]
 
         remove_emoji = self.remove_Emojify(text)
@@ -308,12 +342,6 @@ class Parse:
         remove_and = re.sub(r'\s0\s', " ", remove_emoji)
         remove_url = self.remove_urlTwwit_from_text(remove_and)
         decontracted = self.decontracted(remove_url)
-
-        #print("Text",text)
-        #print("remove emoje",remove_emoji)
-        #print("Replace_word_to_Num",replace_word_to_num)
-        #print("Remove and", remove_and)
-        #print("Remove decontracted", decontracted)
 
         #"%" in text or
         if "percent" in decontracted or "percentage" in decontracted:
@@ -399,6 +427,7 @@ class Parse:
         retweet_quoted_indices = doc_as_list[13]
 
         term_dict = {}
+        term_dict_stemming = {}
         tokenized_retweet_text=[]
         tokenized_retweet_quoted_text=[]
         tokenized_url=[]
@@ -406,10 +435,10 @@ class Parse:
         tokenized_retweet_quoted_urls=[]
         doc_length = 0
         max_tf = 0
+        max_tf_stemming = 0
 
         if full_text:
             tokenized_text_1 = self.parse_sentence(full_text)
-            #print(tokenized_text_1 ,type(tokenized_text_1[0]),type(tokenized_text_1[1]))
             tokenized_text = tokenized_text_1[0]
             doc_length += tokenized_text_1[1]
 
@@ -424,28 +453,27 @@ class Parse:
 
         if url:
             tokenized_url = self.parse_url(url)
+            doc_length += len(tokenized_url)
         if retweet_url:
             tokenized_retweet_url = self.parse_url(retweet_url)
+            doc_length += len(tokenized_retweet_url)
         if retweet_quoted_urls:
             tokenized_retweet_quoted_urls = self.parse_url(retweet_quoted_urls)
+            doc_length += len(tokenized_retweet_quoted_urls)
+
+        #print("---------------------------------------------------------------------")
 
 
-        #print("tokenized_text",type(tokenized_text))
-        #print("tokenized_retweet_text",type(tokenized_retweet_text))
-        #print("tokenized_retweet_quoted_text", type(tokenized_retweet_quoted_text))
-        #print("tokenized_url", type(tokenized_url))
-        #print("tokenized_retweet_url", type(tokenized_retweet_url))
-        #print("tokenized_retweet_quoted_urls", type(tokenized_retweet_quoted_urls))
-        print("---------------------------------------------------------------------")
-        print(full_text)
-        #print(tokenized_url)
-        #print(url)
-        #print(tokenized_text)
-        #
-        full_tokenized = tokenized_text + tokenized_retweet_text + tokenized_retweet_quoted_text + tokenized_url + tokenized_retweet_url + tokenized_retweet_quoted_urls
+        full_tokenized = tokenized_text + tokenized_retweet_text + tokenized_retweet_quoted_text
+        urls_tokenized = tokenized_url + tokenized_retweet_url + tokenized_retweet_quoted_urls
 
-        # tf
+        #Without Stemming
         for term in full_tokenized:
+            if term not in term_dict.keys():
+                term_dict[term] = 1
+            else:
+                term_dict[term] += 1
+        for term in urls_tokenized:
             if term not in term_dict.keys():
                 term_dict[term] = 1
             else:
@@ -454,10 +482,33 @@ class Parse:
         if term_dict:
             max_tf = max(term_dict.values())
 
+        #Stemming
+        term_tokenized_stemming = self.stemming(full_tokenized)
+        for term in term_tokenized_stemming:
+            if term not in term_dict_stemming.keys():
+                term_dict_stemming[term] = 1
+            else:
+                term_dict_stemming[term] += 1
+
+        for term in urls_tokenized:
+            if term not in term_dict_stemming.keys():
+                term_dict_stemming[term] = 1
+            else:
+                term_dict_stemming[term] += 1
+
+        if term_dict_stemming:
+            max_tf_stemming = max(term_dict_stemming.values())
+
+        print(full_text)
         print(term_dict)
-        #print(max_tf)
+        print(term_dict_stemming)
 
         document = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
                             retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
                             retweet_quoted_urls, retweet_quoted_indices, term_dict, doc_length ,max_tf )
-        return document
+
+        document_stemming = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
+                            retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
+                            retweet_quoted_urls, retweet_quoted_indices, term_dict_stemming, doc_length , max_tf_stemming)
+
+        return document,document_stemming
