@@ -1,8 +1,9 @@
 
 class Document:
 
-    def __init__(self, tweet_id, tweet_date=None, full_text=None, url=None, retweet_text=None, retweet_url=None,
-                 quote_text=None, quote_url=None, term_doc_dictionary=None, doc_length=0):
+    def __init__(self, tweet_id, tweet_date=None, full_text=None, url=None, indices=None, retweet_text=None, retweet_url=None,
+                 retweet_indices=None, quote_text=None, quote_url=None, quoted_indices=None, retweet_quoted_text=None,
+                 retweet_quoted_urls=None, retweet_quoted_indices=None, term_doc_dictionary=None, doc_length=0 ,max_tf=0): #,tf_normal=0):
         """
         :param tweet_id: tweet id
         :param tweet_date: tweet date
@@ -25,3 +26,11 @@ class Document:
         self.quote_url = quote_url
         self.term_doc_dictionary = term_doc_dictionary
         self.doc_length = doc_length
+        self.indices = indices
+        self.retweet_indices = retweet_indices
+        self.quoted_indices = quoted_indices
+        self.retweet_quoted_text = retweet_quoted_text
+        self.retweet_quoted_urls = retweet_quoted_urls
+        self.retweet_quoted_indices = retweet_quoted_indices
+        self.max_tf = max_tf
+        #self.tf_normal = tf_normal
