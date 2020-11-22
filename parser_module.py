@@ -21,7 +21,10 @@ class Parse:
     def remove_punctuation(self,text):
         without_punc = []
         for w in text:
-            t = w.translate(str.maketrans('', '', string.punctuation))
+            if not re.match(r'^\d', w ):
+                t = w.translate(str.maketrans('', '', string.punctuation))
+            else:
+                t=w
             if t:
                 without_punc.append(t)
         #x = [''.join(c for c in s if c not in string.punctuation) for s in text]
@@ -77,6 +80,7 @@ class Parse:
                     n_list.append(str(i))
                 # bigger than Thousand
                 elif i >= 1000 and i < 1000000:
+                    print(i,type(i),i%1000)
                     if i % 1000 == 0:
                         n_list.append(str(int(i/1000))+"K")
                     else:
@@ -263,7 +267,7 @@ class Parse:
         entity_list = []
 
         for entity in sen.ents:
-            if entity.label_ in label_list and (not str(entity).startswith("@")):
+            if entity.label_ in label_list and (not str(entity).startswith("@")) and (not str(entity).startswith("RT @")):
                 entity_list.append(entity)
         #print(entity.text + ' - ' + entity.label_ + ' - ' + str(spacy.explain(entity.label_)))
         return entity_list
