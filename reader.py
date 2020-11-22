@@ -13,7 +13,6 @@ class ReadFile:
         :param file_name: string - indicates the path to the file we wish to read.
         :return: a dataframe contains tweets.
         """
-
-        #full_path = os.path.join(self.corpus_path, file_name)
-        df = pd.read_parquet(file_name, engine="pyarrow")
+        full_path = os.path.join(self.corpus_path, file_name)
+        df = pd.read_parquet(full_path, engine="pyarrow")
         return df.values.tolist()

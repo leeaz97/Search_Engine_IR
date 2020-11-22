@@ -8,7 +8,6 @@ import os
 
 def run_engine():
     """
-
     :return:
     """
     number_of_documents = 0
@@ -19,6 +18,8 @@ def run_engine():
     indexer = Indexer(config)
 
     f = open("demofile2.txt", "a")
+
+
 
     for subdir, dirs, files in os.walk(config.get__corpusPath()):
         for file in files:
@@ -35,6 +36,13 @@ def run_engine():
                     number_of_documents += 1
                     # index the document data
                     indexer.add_new_doc(parsed_document)
+
+                    if number_of_documents == 200:
+                        break
+            if number_of_documents == 200:
+                break
+        if number_of_documents == 200:
+            break
     print('Finished parsing and indexing. Starting to export files')
 
     utils.save_obj(indexer.inverted_idx, "inverted_idx")

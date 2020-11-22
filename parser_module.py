@@ -5,12 +5,18 @@ import re
 from urllib.parse import urlparse
 import string
 import spacy
+from nltk.stem.wordnet import WordNetLemmatizer
 sp = spacy.load('en_core_web_sm')
 
 class Parse:
 
     def __init__(self):
         self.stop_words = stopwords.words('english')
+
+    #def wordNet(self,text):
+    #    #words = ['gave', 'went', 'going', 'dating']
+    #    for word in text:
+    #        print(word + "-->" + WordNetLemmatizer().lemmatize(word, 'v'))
 
     def remove_punctuation(self,text):
         without_punc = []
@@ -47,13 +53,17 @@ class Parse:
         tags_list = [ text[i]+text[i+1] for i, e in enumerate(text) if e == "@" and len(text) > i+1 ]
         return tags_list
 
-    #def parse_dollar(self ,text):
-    #    dollar_start_list = re.findall(r'^\$(\d[\d., ]*?)\s', text)
-    #    dollar_end_list = re.findall(r'(\d[\d., ]*?)\$$\s', text)
-    #    #dollar_list = [text[i-1] + text[i] for i, e in enumerate(text) if e == "$" and i-1 > 0 ]
-    #    return dollar_start_list + dollar_end_list
+    def parse_percent(self,text):
+        list_percent = re.findall(r'(\d[\d., ]*?%)\s*',text)
+        return list_percent
+
+    def parse_dollar(self ,text):
+        start_dollar = re.findall(r'(\$\d[\d., ]*)',text)
+        end_dollar = re.findall(r'(\d[\d., ]*?\$)\s*',text)
+        return start_dollar + end_dollar
 
     def num_Billion_Million_Thousand(self, text):
+        # do modole %
         n_list = []
         for i in text:
             if re.match(r'^\d+$|^\d+?\.\d+?$|^\d+(\,+\d+)+$|^\d+(\,+\d+)+?\.\d+?$', i):
@@ -67,22 +77,22 @@ class Parse:
                     n_list.append(str(i))
                 # bigger than Thousand
                 elif i >= 1000 and i < 1000000:
-                    if isinstance(i,int):
+                    if i % 1000 == 0:
                         n_list.append(str(int(i/1000))+"K")
                     else:
-                        n_list.append(str(i/1000)+"K")
+                        n_list.append(str(float(i/1000))+"K")
                 # bigger than Million
                 elif i >= 1000000 and i < 1000000000:
-                    if isinstance(i,int):
-                        n_list.append(str(int(i/1000))+"M")
+                    if i % 1000000 == 0:
+                        n_list.append(str(int(i/1000000))+"M")
                     else:
-                        n_list.append(str(i/1000000)+"M")
+                        n_list.append(str(float(i/1000000))+"M")
                 #bigger than Billion
                 else:
-                    if isinstance(i,int):
-                        n_list.append(str(int(i/1000))+"B")
+                    if i % 1000000000 == 0:
+                        n_list.append(str(int(i/1000000000))+"B")
                     else:
-                        n_list.append(str(i/1000000000)+"B")
+                        n_list.append(str(float(i/1000000000))+"B")
             else:
                 n_list.append(str(i))
         return n_list
@@ -117,6 +127,9 @@ class Parse:
         phrase = re.sub(r"\’", "\'", phrase)
         phrase = re.sub(r"\“", "\"", phrase)
         phrase = re.sub(r"\…", "...", phrase)
+        phrase = re.sub(r"\”", "\"", phrase)
+        phrase = re.sub(r"\‘", "\'", phrase)
+
 
         # specific
         phrase = re.sub(r"won\'t", "will not", phrase)
@@ -191,7 +204,7 @@ class Parse:
 
         return curstring
 
-    def parse_percent(self ,text):
+    def parse_percent_word(self ,text):
         #conseder +\-
         text_after_percentage = re.sub(r'(\d[\d., ]*?)\spercentage[s]{0,1}', "\\1%", text)
         text_after_percent = re.sub(r'(\d[\d.,]*?)\spercent[s]{0,1}', "\\1%", text_after_percentage)
@@ -244,7 +257,7 @@ class Parse:
         FAC - Buildings, airports, highways, bridges, etc.
         EVENT - Named hurricanes, battles, wars, sports events, etc.
         LANGUAGE - Any named language.
-        #MISC - Miscellaneous entities, e.g. events, nationalities, products or works of art.'''
+        MISC - Miscellaneous entities, e.g. events, nationalities, products or works of art.'''
 
         label_list = ["ORG","GPE","PERSON","NORP","LOC","WORK_OF_ART","FAC","EVENT","LANGUAGE","MISC"]
         entity_list = []
@@ -254,7 +267,6 @@ class Parse:
                 entity_list.append(entity)
         #print(entity.text + ' - ' + entity.label_ + ' - ' + str(spacy.explain(entity.label_)))
         return entity_list
-
 
     def remove_urlTwwit_from_text(self,text):
         t = re.sub(r'(https|http)?:\/\/t.co\/(\w|\.|\/|\?|\=|\&|\%)*\b', '', text, flags=re.MULTILINE)
@@ -282,11 +294,14 @@ class Parse:
         """
         hashtags=[]
         tags=[]
+        dollar=[]
+        percent=[]
+
         text_tokens_split=[]
 
         remove_emoji = self.remove_Emojify(text)
-        replace_word_to_num = self.text2int(remove_emoji)
-        remove_and = re.sub(r'\s0\s', " ", replace_word_to_num)
+        #replace_word_to_num = self.text2int(remove_emoji)
+        remove_and = re.sub(r'\s0\s', " ", remove_emoji)
         remove_url = self.remove_urlTwwit_from_text(remove_and)
         decontracted = self.decontracted(remove_url)
 
@@ -298,12 +313,18 @@ class Parse:
 
         #"%" in text or
         if "percent" in decontracted or "percentage" in decontracted:
-            decontracted = self.parse_percent(decontracted)
+            decontracted = self.parse_percent_word(decontracted)
          #   print("remove precent",decontracted)
 
         if "dollar" in decontracted:
             decontracted = self.parse_dollar_word(decontracted)
         #    print("remove dollar",decontracted)
+
+        if "$" in decontracted:
+            dollar = self.parse_dollar(decontracted)
+
+        if "%" in decontracted:
+            percent = self.parse_percent(decontracted)
 
         text_tokens = word_tokenize(decontracted)
         for i in text_tokens:
@@ -313,14 +334,9 @@ class Parse:
             else:
                 text_tokens_split.append(i)
         #text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
-        text_tokens_without_stopwords = [w for w in text_tokens_split if w not in self.stop_words]
+        text_tokens_without_stopwords = [w for w in text_tokens_split if w.lower() not in self.stop_words]
         #print("token", text_tokens)
         #print("token without_stopwords", text_tokens_without_stopwords)
-
-        #if "$" in text_tokens:
-        #    d = self.parse_dollar(decontracted)
-        #    print("Text", text)
-        #    print("dollar", d)
 
         if "#" in text_tokens:
             hashtags = self.parse_hashtags(text_tokens_without_stopwords)
@@ -345,7 +361,17 @@ class Parse:
         #print("names_and_entities",names_and_entities)
         #print("--------------------------------------------------------------------------------------")
 
-        return remove_punctuation + names_and_entities + tags + hashtags + date_and_time
+        #caculate the max terms in the doc
+        for e in names_and_entities:
+            #print(type(e))
+            if str(e) not in remove_punctuation:
+                remove_punctuation.append(str(e))
+
+        for e in date_and_time:
+            if str(e) not in remove_punctuation:
+                remove_punctuation.append(str(e))
+        #remove_punctuation + names_and_entities + tags + hashtags + date_and_time
+        return (remove_punctuation+tags+hashtags+dollar+percent,len(remove_punctuation))
 
     def parse_doc(self, doc_as_list):
         """
@@ -374,34 +400,60 @@ class Parse:
         tokenized_url=[]
         tokenized_retweet_url=[]
         tokenized_retweet_quoted_urls=[]
+        doc_length = 0
+        max_tf = 0
 
-        tokenized_text = self.parse_sentence(full_text)
-        if tokenized_retweet_text:
-            tokenized_retweet_text = self.parse_sentence(retweet_text)
-        if tokenized_retweet_quoted_text:
-            tokenized_retweet_quoted_text = self.parse_sentence(retweet_quoted_text)
-        if tokenized_url:
+        if full_text:
+            tokenized_text_1 = self.parse_sentence(full_text)
+            #print(tokenized_text_1 ,type(tokenized_text_1[0]),type(tokenized_text_1[1]))
+            tokenized_text = tokenized_text_1[0]
+            doc_length += tokenized_text_1[1]
+
+        if retweet_text:
+            tokenized_retweet_text_1 = self.parse_sentence(retweet_text)
+            tokenized_retweet_text = tokenized_retweet_text_1[0]
+            doc_length += tokenized_retweet_text_1[1]
+        if retweet_quoted_text:
+            tokenized_retweet_quoted_text_1 = self.parse_sentence(retweet_quoted_text)
+            tokenized_retweet_quoted_text = tokenized_retweet_quoted_text_1[0]
+            doc_length += tokenized_retweet_quoted_text_1[1]
+
+        if url:
             tokenized_url = self.parse_url(url)
-        if tokenized_retweet_url:
+        if retweet_url:
             tokenized_retweet_url = self.parse_url(retweet_url)
-        if tokenized_retweet_quoted_urls:
+        if retweet_quoted_urls:
             tokenized_retweet_quoted_urls = self.parse_url(retweet_quoted_urls)
 
 
-        #print(full_text)
+        #print("tokenized_text",type(tokenized_text))
+        #print("tokenized_retweet_text",type(tokenized_retweet_text))
+        #print("tokenized_retweet_quoted_text", type(tokenized_retweet_quoted_text))
+        #print("tokenized_url", type(tokenized_url))
+        #print("tokenized_retweet_url", type(tokenized_retweet_url))
+        #print("tokenized_retweet_quoted_urls", type(tokenized_retweet_quoted_urls))
+        print("---------------------------------------------------------------------")
+        print(full_text)
+        #print(tokenized_url)
+        #print(url)
         #print(tokenized_text)
-        #print("---------------------------------------------------------------------")
-        full_tokenized = tokenized_text.extend(tokenized_retweet_text).extend(tokenized_retweet_quoted_text).extend(tokenized_url).extend(tokenized_retweet_url).extend(tokenized_retweet_quoted_urls)
+        #
+        full_tokenized = tokenized_text + tokenized_retweet_text + tokenized_retweet_quoted_text + tokenized_url + tokenized_retweet_url + tokenized_retweet_quoted_urls
 
-        doc_length = len(full_tokenized)  # after text operations.
-
+        # tf
         for term in full_tokenized:
             if term not in term_dict.keys():
                 term_dict[term] = 1
             else:
                 term_dict[term] += 1
 
+        if term_dict:
+            max_tf = max(term_dict.values())
+
+        print(term_dict)
+        #print(max_tf)
+
         document = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
                             retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
-                            retweet_quoted_urls, retweet_quoted_indices, term_dict, doc_length)
+                            retweet_quoted_urls, retweet_quoted_indices, term_dict, doc_length ,max_tf )
         return document
