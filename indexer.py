@@ -51,12 +51,12 @@ class Indexer:
                     #tweer id,tf,len doc,tf_normal,max_term,tweet date
                     #self.postingDict[term.lower()].append((document.tweet_id,document_dictionary[term],document.doc_length,document_dictionary[term]/document.max_tf,document.max_tf,document.tweet_date))
                 else:
-                        # if the term Start with Lower and exists as First charchter Upper in the inverted indexer , remove from the inverted index and postingfile
+                        # if the term Start with Lower and exists as First charchter Upper in the inverted indexer,remove from the inverted index and postingfile
                     if term[0].upper()+term[1:] in self.inverted_idx.keys() and re.match('[a-z]',term[0]):
                             self.inverted_idx[term] = self.inverted_idx.pop(term[0].upper()+term[1:]) + 1
                             #print(self.inverted_idx[term])
                             self.postingDict[term] = []
-                            self.postingDict[term].append(self.postingDict.pop(term[0].upper()+term[1:]))
+                            self.postingDict[term].expend(self.postingDict.pop(term[0].upper()+term[1:]))
                             self.postingDict[term].append((document.tweet_id, document_dictionary[term],
                                                                    document.doc_length,
                                                                    document_dictionary[term] / document.max_tf,
