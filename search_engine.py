@@ -52,7 +52,7 @@ def run_engine(corpus_path,output_path,stemming):
     utils.save_obj(indexer_without_stremming.postingDict, "posting_without_stremming")
     utils.save_obj(indexer_stremming.inverted_idx, "inverted_idx_stremming")
     utils.save_obj(indexer_stremming.postingDict, "posting_stremming")
-
+    return number_of_documents
 
 def load_index(name_index):
     print('Load inverted index')
@@ -60,33 +60,46 @@ def load_index(name_index):
     return inverted_index
 
 
-def search_and_rank_query(query, inverted_index, k):
+def search_and_rank_query(query,inverted_index,k,stem):
     p = Parse()
-    query_as_list = p.parse_sentence(query)
-    searcher = Searcher(inverted_index)
+    #query_as_list = p.parse_sentence(query)
+    query_as_list = p.parse_sentence(query)[0]
+    if stem:
+        query_as_list = p.stemming(query_as_list)
+
+    searcher = Searcher(inverted_index,stem)
     relevant_docs = searcher.relevant_docs_from_posting(query_as_list)
     ranked_docs = searcher.ranker.rank_relevant_doc(relevant_docs)
     return searcher.ranker.retrieve_top_k(ranked_docs, k)
 
 
-def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data\date=07-09-2020",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=False,queris=[],num_doc_to_retrive=100):
+def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data\date=07-09-2020",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=False,queries=[],num_doc_to_retrive=2000):
     run_engine(corpus_path,output_path,stemming)
     #query = input("Please enter a query: ")
+    queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
+              "The seasonal flu kills more people every year in the U.S. than COVID-19 has to date.","Coronavirus is less dangerous than the flu",
+              "Microsoft co-founder Bill Gates said \"only the people who have all the vaccines will still be able to move freely\"."]
     #k = int(input("Please enter number of docs to retrieve: "))
+    # limit the doc retrive to 2000
+    if num_doc_to_retrive>2000:
+        num_doc_to_retrive=2000
+
+    #load the relevant index
     if stemming:
         inverted_index = load_index("inverted_idx_stremming")
     else:
         inverted_index = load_index("inverted_idx_without_stremming")
-    if queris:
-        if isinstance(queris, list):
-            for query in queris:
-                for doc_tuple in search_and_rank_query(query, inverted_index, num_doc_to_retrive):
+
+    if queries:
+        if isinstance(queries, list):
+            for query in queries:
+                for doc_tuple in search_and_rank_query(query, inverted_index, num_doc_to_retrive,stemming):
                     print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
         else:
-            file = open(queris, 'r')
+            file = open(queries, 'r')
             queries = file.readlines()
             for q in queries:
-                for doc_tuple in search_and_rank_query(q, inverted_index, num_doc_to_retrive):
+                for doc_tuple in search_and_rank_query(q, inverted_index, num_doc_to_retrive,stemming):
                     print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
 
 
