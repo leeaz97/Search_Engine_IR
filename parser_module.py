@@ -300,8 +300,15 @@ class Parse:
         # print(entity.text + ' - ' + entity.label_ + ' - ' + str(spacy.explain(entity.label_)))
         return entity_list
 
-    def parse_LowerCaseOrUpperCase(self ,text):
-        return
+    def parse_LowerCaseOrUpperCase(self,tokens):
+        #tokens = ['wear', 'a', 'lee', 'Wear', 'Done']
+        l = []
+        for x in tokens:
+            if x.lower() in tokens:
+                l.append(x.lower())
+            else:
+                l.append(x)
+        return l
 
     def parse_sentence(self, text):
         """
@@ -363,7 +370,9 @@ class Parse:
         #if text_tokens_without_stopwords:
         #    print("big num",text_tokens_without_stopwords)
 
-        remove_punctuation = self.remove_punctuation(text_tokens_without_stopwords)
+        remove_upper_exist = self.parse_LowerCaseOrUpperCase(text_tokens_without_stopwords)
+
+        remove_punctuation = self.remove_punctuation(remove_upper_exist)
         #if remove_punctuation:
         #    print("remove_punctuation",remove_punctuation)
 
@@ -479,6 +488,9 @@ class Parse:
         #max_tf the max frequnce of term in doc
         if term_dict:
             max_tf = max(term_dict.values())
+
+        #print(full_text)
+        #print(term_dict)
 
         document = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
                             retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,

@@ -6,6 +6,7 @@ class Indexer:
         self.postingDict = {}
         self.config = config
 
+
     def add_new_doc(self, document):
         """
         This function perform indexing process for a document object.
@@ -24,7 +25,7 @@ class Indexer:
 
                 if term[0].isupper():
                     # if its start with upper and exists as lower in the inverted indexer
-                    if term.lower in self.inverted_idx.keys():
+                    if term.lower() in self.inverted_idx.keys():
                         self.inverted_idx[term.lower()] += 1
                         self.postingDict[term.lower()].append((document.tweet_id, document_dictionary[term],
                                                                document.doc_length,
@@ -56,7 +57,9 @@ class Indexer:
                             self.inverted_idx[term] = self.inverted_idx.pop(term[0].upper()+term[1:]) + 1
                             #print(self.inverted_idx[term])
                             self.postingDict[term] = []
-                            self.postingDict[term].expend(self.postingDict.pop(term[0].upper()+term[1:]))
+                            temp = self.postingDict.pop(term[0].upper()+term[1:])
+                            for i in temp:
+                                self.postingDict[term].append(i)
                             self.postingDict[term].append((document.tweet_id, document_dictionary[term],
                                                                    document.doc_length,
                                                                    document_dictionary[term] / document.max_tf,
