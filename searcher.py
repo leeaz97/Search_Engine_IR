@@ -26,19 +26,29 @@ class Searcher:
         #    posting = utils.load_obj("posting_without_stremming")
 
         posting = utils.load_obj("posting")
+        inverted_index = utils.load_obj("inverted_idx")
 
         #word2Vec
         relevant_docs = {}
         for term in query:
             try:
                 posting_doc = posting[term]
+                #amount of time term show in courpus - doc ferqunce
+                df_doc = inverted_index[term]
                 print("posting to term in query {}",term,posting_doc)
                 for docs in posting_doc:
                     doc_id = docs[0]
+                    # term ferqunce
+                    doc_tf = docs[3]
+                    doc_time = docs[5]
+
                     if doc_id not in relevant_docs.keys():
                         relevant_docs[doc_id] = 1
+                        #relevant_docs[doc_id] = (1,[(term,doc_tf,df_doc,doc_time)])
                     else:
                         relevant_docs[doc_id] += 1
+                        #relevant_docs[doc_id][1].append((term,doc_tf,df_doc,doc_time))
             except:
                 print('term {} not found in posting'.format(term))
+        print(relevant_docs)
         return relevant_docs

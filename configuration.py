@@ -5,6 +5,7 @@ class ConfigClass:
         self.saveFilesWithStem = self.savedFileMainFolder + "/WithStem"
         self.saveFilesWithoutStem = self.savedFileMainFolder + "/WithoutStem"
         self.toStem = False
+        self.number_of_documents = 0
 
         print('Project was created successfully..')
 

@@ -14,7 +14,6 @@ def run_engine(config):
     """
     number_of_documents = 0
 
-
     r = ReadFile(corpus_path=config.get__corpusPath())
     p = Parse(config)
     indexer = Indexer(config)
@@ -78,7 +77,9 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data\date=07-09-20
     config.savedFileMainFolder = output_path
     config.toStem = stemming
 
-    run_engine(config)
+    number_of_documents = run_engine(config)
+    config.number_of_documents = number_of_documents
+
     #query = input("Please enter a query: ")
     queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
               "The seasonal flu kills more people every year in the U.S. than COVID-19 has to date.","Coronavirus is less dangerous than the flu",
