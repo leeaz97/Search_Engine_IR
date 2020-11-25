@@ -5,14 +5,14 @@ import utils
 
 class Searcher:
 
-    def __init__(self, inverted_index,stemming):
+    def __init__(self, inverted_index,config):#,stemming):
         """
         :param inverted_index: dictionary of inverted index
         """
-        self.parser = Parse()
+        self.parser = Parse(config)
         self.ranker = Ranker()
         self.inverted_index = inverted_index
-        self.stemming = stemming
+        #self.stemming = stemming
 
     def relevant_docs_from_posting(self, query):
         """
@@ -20,14 +20,17 @@ class Searcher:
         :param query: query
         :return: dictionary of relevant documents.
         """
-        if self.stemming:
-            posting = utils.load_obj("posting_stremming")
-        else:
-            posting = utils.load_obj("posting_without_stremming")
+        #if self.stemming:
+        #    posting = utils.load_obj("posting_stremming")
+        #else:
+        #    posting = utils.load_obj("posting_without_stremming")
 
+        posting = utils.load_obj("posting")
+
+        #word2Vec
         relevant_docs = {}
         for term in query:
-            try: # an example of checks that you have to do
+            try:
                 posting_doc = posting[term]
                 print("posting to term in query {}",term,posting_doc)
                 for docs in posting_doc:

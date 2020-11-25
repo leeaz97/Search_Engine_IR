@@ -3,9 +3,11 @@ from nltk.tokenize import word_tokenize
 from document import Document
 import re
 from urllib.parse import urlparse
+from configuration import ConfigClass
+from stemmer import Stemmer
 import string
 import spacy
-from nltk.stem.snowball import SnowballStemmer
+
 
 from nltk.stem.wordnet import WordNetLemmatizer
 sp = spacy.load('en_core_web_sm')
@@ -13,9 +15,11 @@ sp = spacy.load('en_core_web_sm')
 
 class Parse:
 
-    def __init__(self):
+    def __init__(self, config):
+        #config = ConfigClass()
         self.stop_words = stopwords.words('english')
-        self.stemmer = SnowballStemmer(language='english')
+        self.stemmer = config.toStem
+
 
     #def wordNet(self,text):
     #    #words = ['gave', 'went', 'going', 'dating']
@@ -26,7 +30,8 @@ class Parse:
         without_punc = []
         for w in text:
             if not re.match(r'^\d', w ):
-                t = w.translate(str.maketrans('', '', string.punctuation))
+                #t = w.translate(str.maketrans('', '', string.punctuation))
+                t = w.translate(str.maketrans('', '', r"""!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""))
             else:
                 t=w
             if t:
@@ -107,6 +112,7 @@ class Parse:
 
     #how to consider 'http://www.cwi.nl:80/%7Eguido/Python.html'
     def parse_url(self ,url):
+        #print(url)
         list_url = []
 
         #split the string to list
@@ -142,6 +148,8 @@ class Parse:
         # specific
         phrase = re.sub(r"won\'t", "will not", phrase)
         phrase = re.sub(r"can\'t", "can not", phrase)
+        phrase = re.sub(r"don\'t", "do not", phrase)
+        phrase = re.sub(r"doesn\'t", "does not", phrase)
 
         # general
         phrase = re.sub(r"n\'t", " not", phrase)
@@ -214,7 +222,7 @@ class Parse:
 
     def parse_percent_word(self ,text):
         #conseder +\-
-        text_after_percentage = re.sub(r'(\d[\d., ]*?)\spercentage[s]{0,1}', "\\1%", text)
+        text_after_percentage = re.sub(r'(\d[\d.,]*?)\spercentage[s]{0,1}', "\\1%", text)
         text_after_percent = re.sub(r'(\d[\d.,]*?)\spercent[s]{0,1}', "\\1%", text_after_percentage)
         return text_after_percent
 
@@ -295,36 +303,6 @@ class Parse:
     def parse_LowerCaseOrUpperCase(self ,text):
         return
 
-    def stemming(self,tokens):
-        list_after_stemming = []
-        t = ""
-        for token in tokens:
-            stem_token = self.stemmer.stem(token)
-            #if not do stemming save the token as is
-            if stem_token == token.lower():
-                list_after_stemming.append(token)
-            else:
-                # if the token was Uppercase, save him after stemming as Uppercase
-                if token.isupper():
-                    list_after_stemming.append(stem_token.upper())
-                # if the token was Lowercase, save him after stemming as Lowercase
-                elif token.islower():
-                    list_after_stemming.append(stem_token)
-
-                    #elif token[0].isupper():
-                    #list_after_stemming.append(stem_token[0].upper() + stem_token[1:])
-                # if the token was Uppercase, save him after stemming as Uppercase
-                else:
-                    for i in range(len(stem_token)):
-                        if token[i].isupper():
-                            t += stem_token[i].upper()
-                        else:
-                            t += stem_token[i]
-                    list_after_stemming.append(t)
-                    t = ""
-
-        return list_after_stemming
-
     def parse_sentence(self, text):
         """
         This function tokenize, remove stop words and apply lower case for every word within the text
@@ -339,8 +317,8 @@ class Parse:
 
         remove_emoji = self.remove_Emojify(text)
         #replace_word_to_num = self.text2int(remove_emoji)
-        remove_and = re.sub(r'\s0\s', " ", remove_emoji)
-        remove_url = self.remove_urlTwwit_from_text(remove_and)
+        #remove_and = re.sub(r'\s0\s', " ", remove_emoji)
+        remove_url = self.remove_urlTwwit_from_text(remove_emoji)
         decontracted = self.decontracted(remove_url)
 
         #"%" in text or
@@ -359,12 +337,15 @@ class Parse:
             percent = self.parse_percent(decontracted)
 
         text_tokens = word_tokenize(decontracted)
+        #print(text_tokens)
+
         for i in text_tokens:
             if "/" in i:
                 for j in i.split("/"):
                     text_tokens_split.append(j)
             else:
                 text_tokens_split.append(i)
+
         #text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
         text_tokens_without_stopwords = [w for w in text_tokens_split if w.lower() not in self.stop_words]
         #print("token", text_tokens)
@@ -392,18 +373,26 @@ class Parse:
         date_and_time = self.parse_Date_and_time(sen)
         #print("names_and_entities",names_and_entities)
         #print("--------------------------------------------------------------------------------------")
-
-        #caculate the max terms in the doc
+        # insert the new name and entities to the token list
         for e in names_and_entities:
-            #print(type(e))
+            #search if not exists in tokens
+            if str(e) not in remove_punctuation:
+                remove_punctuation.append(str(e))
+        # insert the new date\time to the token list
+        for e in date_and_time:
+            # search if not exists in tokens
             if str(e) not in remove_punctuation:
                 remove_punctuation.append(str(e))
 
-        for e in date_and_time:
-            if str(e) not in remove_punctuation:
-                remove_punctuation.append(str(e))
+        full_tokens = remove_punctuation + tags + hashtags + dollar + percent
+
+        #Stemming
+        if self.stemmer:
+            s = Stemmer()
+            full_tokens = s.stem_term(full_tokens)
+
         #remove_punctuation + names_and_entities + tags + hashtags + date_and_time
-        return (remove_punctuation+tags+hashtags+dollar+percent,len(remove_punctuation))
+        return (full_tokens,len(remove_punctuation))
 
     def parse_doc(self, doc_as_list):
         """
@@ -427,7 +416,7 @@ class Parse:
         retweet_quoted_indices = doc_as_list[13]
 
         term_dict = {}
-        term_dict_stemming = {}
+        #term_dict_stemming = {}
         tokenized_retweet_text=[]
         tokenized_retweet_quoted_text=[]
         tokenized_url=[]
@@ -435,9 +424,9 @@ class Parse:
         tokenized_retweet_quoted_urls=[]
         doc_length = 0
         max_tf = 0
-        max_tf_stemming = 0
 
         if full_text:
+            #return tuple , in place o - tokens list ,in place 1 - len of terms
             tokenized_text_1 = self.parse_sentence(full_text)
             tokenized_text = tokenized_text_1[0]
             doc_length += tokenized_text_1[1]
@@ -446,6 +435,7 @@ class Parse:
             tokenized_retweet_text_1 = self.parse_sentence(retweet_text)
             tokenized_retweet_text = tokenized_retweet_text_1[0]
             doc_length += tokenized_retweet_text_1[1]
+
         if retweet_quoted_text:
             tokenized_retweet_quoted_text_1 = self.parse_sentence(retweet_quoted_text)
             tokenized_retweet_quoted_text = tokenized_retweet_quoted_text_1[0]
@@ -467,48 +457,32 @@ class Parse:
         full_tokenized = tokenized_text + tokenized_retweet_text + tokenized_retweet_quoted_text
         urls_tokenized = tokenized_url + tokenized_retweet_url + tokenized_retweet_quoted_urls
 
-        #Without Stemming
+        # Stemming for urls
+        if self.stemmer:
+            s = Stemmer()
+            urls_tokenized = s.stem_term(urls_tokenized)
+
+        #print("Stemming",self.stemmer)
+
         for term in full_tokenized:
             if term not in term_dict.keys():
                 term_dict[term] = 1
             else:
                 term_dict[term] += 1
+
         for term in urls_tokenized:
             if term not in term_dict.keys():
                 term_dict[term] = 1
             else:
                 term_dict[term] += 1
 
+        #max_tf the max frequnce of term in doc
         if term_dict:
             max_tf = max(term_dict.values())
-
-        #Stemming
-        term_tokenized_stemming = self.stemming(full_tokenized)
-        for term in term_tokenized_stemming:
-            if term not in term_dict_stemming.keys():
-                term_dict_stemming[term] = 1
-            else:
-                term_dict_stemming[term] += 1
-
-        for term in urls_tokenized:
-            if term not in term_dict_stemming.keys():
-                term_dict_stemming[term] = 1
-            else:
-                term_dict_stemming[term] += 1
-
-        if term_dict_stemming:
-            max_tf_stemming = max(term_dict_stemming.values())
-
-        print(full_text)
-        print(term_dict)
-        print(term_dict_stemming)
 
         document = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
                             retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
                             retweet_quoted_urls, retweet_quoted_indices, term_dict, doc_length ,max_tf )
 
-        document_stemming = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
-                            retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
-                            retweet_quoted_urls, retweet_quoted_indices, term_dict_stemming, doc_length , max_tf_stemming)
 
-        return document,document_stemming
+        return document
