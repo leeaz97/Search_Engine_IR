@@ -7,16 +7,59 @@ from stemmer import Stemmer
 import utils
 import os
 
+def mearge_posting(indexer):
+    postingAF = utils.load_obj("postingAF")
+    postingGP = utils.load_obj("postingGP")
+    postingQZ = utils.load_obj("postingQZ")
+    postingSimbol = utils.load_obj("postingSimbol")
+
+    for k,v in indexer.postingDictAF.items():
+        if k in postingAF.keys():
+            for i in v:
+                postingAF[k].append(i)
+        else:
+            postingAF[k] = v
+
+    for k,v in indexer.postingDictGP.items():
+        if k in postingGP.keys():
+            for i in v:
+                postingGP[k].append(i)
+        else:
+            postingGP[k] = v
+
+    for k,v in indexer.postingDictQZ.items():
+        if k in postingQZ.keys():
+            for i in v:
+                postingQZ[k].append(i)
+        else:
+            postingQZ[k] = v
+
+    for k,v in indexer.postingDictSimbol.items():
+        if k in postingSimbol.keys():
+            for i in v:
+                postingSimbol[k].append(i)
+        else:
+            postingSimbol[k] = v
+
+    utils.save_obj(postingAF, "postingAF")
+    utils.save_obj(postingGP, "postingGP")
+    utils.save_obj(postingQZ, "postingQZ")
+    utils.save_obj(postingSimbol, "postingSimbol")
+
+#    return
 
 def run_engine(config):
     """
     :return:
     """
     number_of_documents = 0
+    num_doc_topost = 0
+    to_mearge = False
 
     r = ReadFile(corpus_path=config.get__corpusPath())
     p = Parse(config)
     indexer = Indexer(config)
+
     #indexer_without_stremming = Indexer(config)
 
     #f = open("demofile2.txt", "a")
@@ -35,18 +78,42 @@ def run_engine(config):
                     number_of_documents += 1
                     # index the document data
                     indexer.add_new_doc(parsed_document)
-                    if number_of_documents == 200:
+
+                    if num_doc_topost <= 1000:
+                        num_doc_topost += 1
+                        print(num_doc_topost)
+                    else:
+                        if to_mearge:
+                            print("to mearge")
+                            mearge_posting(indexer)
+
+                            indexer.init_posting()
+                            to_mearge = False
+                        else:
+                            utils.save_obj(indexer.postingDictAF, "postingAF")
+                            utils.save_obj(indexer.postingDictGP, "postingGP")
+                            utils.save_obj(indexer.postingDictQZ, "postingQZ")
+                            utils.save_obj(indexer.postingDictSimbol, "postingSimbol")
+                            indexer.init_posting()
+                            to_mearge = True
+                        num_doc_topost = 0
+                        #posting_num+=1
+
+                    if number_of_documents == 3000:
                         break
-            if number_of_documents == 200:
+            if number_of_documents == 3000:
                 break
-        if number_of_documents == 200:
+        if number_of_documents == 3000:
             break
+
+
+    utils.save_obj(indexer.inverted_idx, "inverted_idx")
     print('Finished parsing and indexing. Starting to export files')
 
 #    utils.save_obj(indexer_without_stremming.inverted_idx, "inverted_idx_without_stremming")
 #    utils.save_obj(indexer_without_stremming.postingDict, "posting_without_stremming")
-    utils.save_obj(indexer.inverted_idx, "inverted_idx")
-    utils.save_obj(indexer.postingDict, "posting")
+    #utils.save_obj(indexer.inverted_idx, "inverted_idx")
+    #utils.save_obj(indexer.postingDict, "posting")
     return number_of_documents
 
 def load_index(name_index):
