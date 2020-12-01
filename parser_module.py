@@ -1,17 +1,18 @@
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from document import Document
 import re
 from urllib.parse import urlparse
-from configuration import ConfigClass
-from stemmer import Stemmer
-import string
+
 import spacy
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.tokenize.regexp import regexp_tokenize
 
+from document import Document
+from stemmer import Stemmer
 
+import keras_preprocessing.text as keras_t
 from nltk.stem.wordnet import WordNetLemmatizer
-sp = spacy.load('en_core_web_sm')
 
+sp = spacy.load('en_core_web_sm')
 
 class Parse:
 
@@ -88,7 +89,7 @@ class Parse:
                 if i < 1000:
                     n_list.append(str(i))
                 # bigger than Thousand
-                elif i >= 1000 and i < 1000000:
+                elif 1000000 <= i < 1000000000:
                     #print(i,type(i),i%1000)
                     if i % 1000 == 0:
                         n_list.append(str(int(i/1000))+"K")
@@ -221,10 +222,11 @@ class Parse:
         return curstring
 
     def parse_percent_word(self ,text):
+        text_after_percentage = re.sub(r'(\d[\d.,]*?)\s?percent(age)*[s]{0,1}', "\\1%", text)
         #conseder +\-
-        text_after_percentage = re.sub(r'(\d[\d.,]*?)\spercentage[s]{0,1}', "\\1%", text)
-        text_after_percent = re.sub(r'(\d[\d.,]*?)\spercent[s]{0,1}', "\\1%", text_after_percentage)
-        return text_after_percent
+        #text_after_percentage = re.sub(r'(\d[\d.,]*?)\spercentage[s]{0,1}', "\\1%", text)
+        #text_after_percent = re.sub(r'(\d[\d.,]*?)\spercent[s]{0,1}', "\\1%", text_after_percentage)
+        return text_after_percentage
 
     def parse_dollar_word(self,text):
         text_after_dollar = re.sub(r'(\d[\d., ]*?)\sdollar[s]{0,1}', "\\1$", text)
@@ -254,6 +256,11 @@ class Parse:
                                    u"\U0001F620"
                                    u"\u200d"
                                    u"\u2640-\u2642"
+                                   u"\u1F637"
+                                   "❤"
+                                   "😷"
+                                   "❤"
+                                   "❤😷"
                                    "]+", flags=re.UNICODE)
 
         remove_emoji = emoji_pattern.sub(r'', text)
@@ -322,11 +329,15 @@ class Parse:
         percent=[]
         text_tokens_split=[]
 
-        remove_emoji = self.remove_Emojify(text)
+        #remove_emoji = self.remove_Emojify(text)
         #replace_word_to_num = self.text2int(remove_emoji)
         #remove_and = re.sub(r'\s0\s', " ", remove_emoji)
-        remove_url = self.remove_urlTwwit_from_text(remove_emoji)
+        remove_url = self.remove_urlTwwit_from_text(text)
         decontracted = self.decontracted(remove_url)
+
+        # clean_text
+        decontracted = re.sub('[^a-zA-Z0-9-!@\\\$%\^&*{}\[\]|/\'\":;><.,`~?\#]+', r" ", decontracted)
+        print(decontracted)
 
         #"%" in text or
         if "percent" in decontracted or "percentage" in decontracted:
@@ -342,8 +353,46 @@ class Parse:
 
         if "%" in decontracted:
             percent = self.parse_percent(decontracted)
+        print("txt: ", decontracted)
+        # replacing versions of covid to "covid"
+        # decontracted = re.sub("(?i)[a-zA-Z]?covid[a-zA-Z]?-?~?_?1?9?[a-zA-Z]?|(?i)[a-zA-Z]?corona[a-zA-Z]?-?~?_?1?9?[a-zA-Z]?", r"covid", decontracted, flags=re.IGNORECASE)
+        #
+        # replacing fractions to rationals
+        decontracted = re.sub("(\d+) (\d+)/(\d+)",
+                              lambda x: "{:.2f}".format((int(x.group(1))) + (float(x.group(2)) / int(x.group(3)))),
+                              decontracted,
+                              flags=re.IGNORECASE)
+        decontracted = re.sub("(\d+)/(\d+)", lambda x: "{:.2f}".format(int(x.group(1)) / int(x.group(2))), decontracted,
+                              flags=re.IGNORECASE)
+        s_covid = '((?i)^([#@]+)[.]*covid[.]*virus?-?~?_?\'?1?9?[.]*)'
+        s_coron = '((?i)^([#@]+)[.]*corona[.]*virus?-?~?_?\'?1?9?[a-zA-Z]*)'
+        #s_frach = re.compile(r'(\d+) (\d+)/(\d+)')
+        #s_frac = re.compile(r'(\d+)/(\d+)')
+        abc = re.compile(s_covid + '|' + s_coron)
+        i = 0
+        for ma in re.finditer(abc, decontracted):
+            i += 1
+            # print (i,": ",ma.groups())
+            if (ma.group(1)):
+                print("1", ma.group(1))
+                decontracted = decontracted.replace(ma.group(1), "covid")
+                # re.sub(ma, "covid")
+            if (ma.group(2)):
+                print("2", ma.group(2))
+                decontracted = decontracted.replace(ma.group(2), "covid")
 
-        text_tokens = word_tokenize(decontracted)
+        # print("covid: ", decontracted)
+        # text_tokens = word_tokenize(decontracted)
+        text_tokens = keras_t.text_to_word_sequence(decontracted, filters='.()*+=:;\"`<>!?“[]}{\n\t', lower=False,
+                                                    split=" ")
+        # remove
+        # text_tokens=re.sub("^&\d?", "", text_tokens)
+
+        # text_regex = regexp_tokenize(decontracted, pattern="[ .():;\"<>!?“\[\]}{\n\t]", gaps=True)
+        # text_token_keras = keras_t.text_to_word_sequence(decontracted)
+        # print("nltk: ", text_tokens)
+        print("keras: ", text_tokens)
+        #text_tokens = word_tokenize(decontracted)
         #print(text_tokens)
 
         for i in text_tokens:
