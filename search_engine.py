@@ -7,6 +7,7 @@ from stemmer import Stemmer
 import utils
 import os
 from datetime import datetime
+import csv
 
 
 def sorted_dic_by_listval(unsorted_dict):
@@ -17,10 +18,7 @@ def mearge_posting(indexer):
     postingGP = utils.load_obj("postingGP")
     postingQZ = utils.load_obj("postingQZ")
     postingSimbol = utils.load_obj("postingSimbol")
-    #print("Length : %d" % len(postingAF))
-    #print("Length : %d" % len(postingGP))
-    #print("Length : %d" % len(postingQZ))
-    #print("Length : %d" % len(postingSimbol))
+
     try:
         for k,v in indexer.postingDictAF.items():
             if k in postingAF.keys():
@@ -103,27 +101,42 @@ def mearge_posting(indexer):
                 postingSimbol[k] = v
 
     except:
-        # print(self.inverted_idx)
-        # print(self.postingDictGP)
         print('problem in mearg with the following key {}'.format(k))
+
     #sorting the posting file
     postingAF = sorted_dic_by_listval(postingAF)
     postingGP = sorted_dic_by_listval(postingGP)
     postingQZ = sorted_dic_by_listval(postingQZ)
     postingSimbol = sorted_dic_by_listval(postingSimbol)
-    #print("----------------------------------------")
-    #print("Length : %d" % len(postingAF))
-    #print("Length : %d" % len(postingGP))
-    #print("Length : %d" % len(postingQZ))
-    #print("Length : %d" % len(postingSimbol))
 
+    #save the mearge file in the disk
     utils.save_obj(postingAF, "postingAF")
     utils.save_obj(postingGP, "postingGP")
     utils.save_obj(postingQZ, "postingQZ")
     utils.save_obj(postingSimbol, "postingSimbol")
 
-#    return
 
+#def avg_veactor_toDoc(w2v_model, tokens):
+#    vectors = np.array([])
+#    first_element = True
+    #gensim.models.Word2Vec.wv.vocab
+#    if tokens:
+#        for word in tokens:
+#            if word in w2v_model.vocab:
+#                if first_element:
+#                    vectors = np.array(w2v_model.wv.get_vector(word, norm=True))
+#                    first_element = False
+                #print(w2v_model.wv[word])
+#                else :
+#                    np.concatenate((vectors, w2v_model.wv.get_vector(word, norm=True)))
+                #vectors = w2v_model.wv[word]
+                #print(type(w2v_model.vocab))
+                #vector = word_vectors.wv.get_vector('office', norm=True)
+
+            #vectors = model.wv[t]
+#        if vectors:
+#            print(np.average(vectors))
+#            print("-----------------------------------")
 def run_engine(config):
     """
     :return:
@@ -150,10 +163,13 @@ def run_engine(config):
                 for idx, document in enumerate(documents_list):
                     # parse the document
                     parsed_document = p.parse_doc(document)
+                    if parsed_document == None:
+                        continue
                     #print(parsed_document.term_doc_dictionary,parsed_document_stremming.term_doc_dictionary)
                     number_of_documents += 1
                     # index the document data
                     indexer.add_new_doc(parsed_document)
+                    #avg_veactor_toDoc(model,parsed_document.term_doc_dictionary.keys())
 
                     if num_doc_topost <= 100:
                         num_doc_topost += 1
@@ -173,12 +189,13 @@ def run_engine(config):
                             to_mearge = True
                         num_doc_topost = 0
                         #posting_num+=1
+                    #print("num of doc", number_of_documents)
 
-                    if number_of_documents == 3000:
+                    if number_of_documents == 1000:
                         break
-            if number_of_documents == 3000:
+            if number_of_documents == 1000:
                 break
-        if number_of_documents == 3000:
+        if number_of_documents == 1000:
             break
 
     indexer.add_idf(number_of_documents)
@@ -207,14 +224,14 @@ def search_and_rank_query(query,inverted_index,k,config):
     #    query_as_list = s.stem_term(query_as_list)
 
     searcher = Searcher(inverted_index,config)
-    relevant_docs = searcher.relevant_docs_from_posting(query_as_list)
-    query_tf = searcher.freq_terms_query(query_as_list)
+    relevant_docs , query_tf = searcher.relevant_docs_from_posting(query_as_list)
+    #query_tf = searcher.freq_terms_query(query_as_list)
     ranked_docs = searcher.ranker.rank_relevant_doc(relevant_docs,query_tf)
     print(ranked_docs)
     return searcher.ranker.retrieve_top_k(ranked_docs, k)
 
 
-def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data\date=07-09-2020",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=True,queries=[],num_doc_to_retrive=2000):
+def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=True,queries=[],num_doc_to_retrive=2000):
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
     print("Current Time =", current_time)
@@ -240,26 +257,29 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data\date=07-09-20
     if num_doc_to_retrive>2000:
         num_doc_to_retrive=2000
 
-    #load the relevant index
-    #if stemming:
-    #    inverted_index = load_index("inverted_idx_stremming")
-    #else:
-    #    inverted_index = load_index("inverted_idx_without_stremming")
+
     inverted_index = load_index("inverted_idx")
 
     if queries:
-        if isinstance(queries, list):
-            for query in queries:
-                for doc_tuple in search_and_rank_query(query, inverted_index, num_doc_to_retrive,config):
-                    print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
-        else:
-            file = open(queries, 'r')
-            queries = file.readlines()
-            for q in queries:
-                for doc_tuple in search_and_rank_query(q, inverted_index, num_doc_to_retrive,config):
-                    print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+        with open('result.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['query_id', 'tweet id', 'score'])
+            if isinstance(queries, list):
+                for query in range(len(queries)):
+                    for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config):
+                        print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+                        writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
+            else:
+                file = open(queries, 'r')
+                queries = file.readlines()
+                for query in range(list(queries)):
+                    for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config):
+                        print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+                        writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
+    now_after_all = datetime.now()
+    print("Diff Time =", now_after_all-now)
 
 
 

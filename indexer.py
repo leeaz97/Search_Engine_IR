@@ -81,7 +81,7 @@ class Indexer:
                 pos = (document.tweet_id, document_dictionary[term],
                                   document.doc_length,
                                   document_dictionary[term] / document.max_tf,
-                                  document.max_tf, document.tweet_date)
+                                  document.max_tf , document.nf, document.tweet_date)
 
                 #invert_data= InvertedData(0,[])
                 # if the term Start with Upper

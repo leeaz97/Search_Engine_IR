@@ -1,3 +1,4 @@
+import math
 class Ranker:
     def __init__(self):
         pass
@@ -12,14 +13,18 @@ class Ranker:
         """
         #(idf_doc, doc_tf, doc_time)
         ranking_doc = {}
+        nf_query = 1/math.sqrt(sum(pow(item,2) for item in query_dict.values()))
         #print(relevant_doc)
         for k,v in relevant_doc.items():
             for i in v.terms:
                 if k not in ranking_doc.keys():
-                    ranking_doc[k] = i[1] * i[2] * query_dict[i[0]]
+                    #print(i[3])
+                    #print(type(math.sqrt(pow(len(query_dict),2))))
+                    #print(1/math.sqrt(pow(len(query_dict),2)))
+                    ranking_doc[k] = (i[1] * i[2] * query_dict[i[0]])#/( i[3] * nf_query )
                 else:
-                    ranking_doc[k] += i[1] * i[2] * query_dict[i[0]]
-
+                    ranking_doc[k] += (i[1] * i[2] * query_dict[i[0]])#/( i[3] * nf_query )
+                ranking_doc[k] =  ranking_doc[k] / ( i[3] * nf_query )
         return sorted(ranking_doc.items(), key=lambda item: item[1], reverse=True)
 
     @staticmethod

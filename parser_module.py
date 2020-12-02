@@ -1,14 +1,12 @@
 import re
 from urllib.parse import urlparse
-
 import spacy
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.regexp import regexp_tokenize
-
 from document import Document
 from stemmer import Stemmer
-
+import math
 import keras_preprocessing.text as keras_t
 from nltk.stem.wordnet import WordNetLemmatizer
 
@@ -337,7 +335,7 @@ class Parse:
 
         # clean_text
         decontracted = re.sub('[^a-zA-Z0-9-!@\\\$%\^&*{}\[\]|/\'\":;><.,`~?\#]+', r" ", decontracted)
-        print(decontracted)
+        #print(decontracted)
 
         #"%" in text or
         if "percent" in decontracted or "percentage" in decontracted:
@@ -353,7 +351,7 @@ class Parse:
 
         if "%" in decontracted:
             percent = self.parse_percent(decontracted)
-        print("txt: ", decontracted)
+        #print("txt: ", decontracted)
         # replacing versions of covid to "covid"
         # decontracted = re.sub("(?i)[a-zA-Z]?covid[a-zA-Z]?-?~?_?1?9?[a-zA-Z]?|(?i)[a-zA-Z]?corona[a-zA-Z]?-?~?_?1?9?[a-zA-Z]?", r"covid", decontracted, flags=re.IGNORECASE)
         #
@@ -391,7 +389,7 @@ class Parse:
         # text_regex = regexp_tokenize(decontracted, pattern="[ .():;\"<>!?“\[\]}{\n\t]", gaps=True)
         # text_token_keras = keras_t.text_to_word_sequence(decontracted)
         # print("nltk: ", text_tokens)
-        print("keras: ", text_tokens)
+        #print("keras: ", text_tokens)
         #text_tokens = word_tokenize(decontracted)
         #print(text_tokens)
 
@@ -444,13 +442,9 @@ class Parse:
 
         full_tokens = remove_punctuation + tags + hashtags + dollar + percent
 
-        #Stemming
-        if self.stemmer:
-            s = Stemmer()
-            full_tokens = s.stem_term(full_tokens)
-
         #remove_punctuation + names_and_entities + tags + hashtags + date_and_time
         return (full_tokens,len(remove_punctuation))
+
 
     def parse_doc(self, doc_as_list):
         """
@@ -515,6 +509,11 @@ class Parse:
         full_tokenized = tokenized_text + tokenized_retweet_text + tokenized_retweet_quoted_text
         urls_tokenized = tokenized_url + tokenized_retweet_url + tokenized_retweet_quoted_urls
 
+        #Stemming
+        if self.stemmer:
+            s = Stemmer()
+            full_tokenized = s.stem_term(full_tokenized)
+
         # Stemming for urls
         if self.stemmer:
             s = Stemmer()
@@ -541,9 +540,16 @@ class Parse:
         #print(full_text)
         #print(term_dict)
 
-        document = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
-                            retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
-                            retweet_quoted_urls, retweet_quoted_indices, term_dict, doc_length ,max_tf )
+        if term_dict:
+            nf = 1/math.sqrt(sum(pow(item,2) for item in term_dict.values()))
+
+            #avg_veactor_toDoc(model, parsed_document)
+
+            document = Document(tweet_id, tweet_date, full_text, url, indices, retweet_text, retweet_url,
+                                retweet_indices, quote_text, quote_url, quoted_indices, retweet_quoted_text,
+                                retweet_quoted_urls, retweet_quoted_indices, term_dict, doc_length ,max_tf ,nf)
 
 
-        return document
+            return document
+        else:
+            return None

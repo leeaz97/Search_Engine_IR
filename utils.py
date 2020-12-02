@@ -1,5 +1,11 @@
 import pickle
+from gensim.models import KeyedVectors
 
+
+def load_GoogleNews_vectors_negative300(filename):
+    # load the google word2vec model
+    model = KeyedVectors.load_word2vec_format(filename, binary=True)
+    return model
 
 def save_obj(obj, name):
     """
