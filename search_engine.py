@@ -4,6 +4,7 @@ from parser_module import Parse
 from indexer import Indexer
 from searcher import Searcher
 from stemmer import Stemmer
+import numpy as np
 import utils
 import os
 from datetime import datetime
@@ -13,14 +14,16 @@ import csv
 def sorted_dic_by_listval(unsorted_dict):
     return dict(sorted(unsorted_dict.items()))
 
-def mearge_posting(indexer):
-    postingAF = utils.load_obj("postingAF")
-    postingGP = utils.load_obj("postingGP")
-    postingQZ = utils.load_obj("postingQZ")
-    postingSimbol = utils.load_obj("postingSimbol")
+def mearge_posting(indexer,path):
+    postingAF = utils.load_obj(os.path.join(path,"postingAF"))
+    postingGP = utils.load_obj(os.path.join(path,"postingGP"))
+    postingQZ = utils.load_obj(os.path.join(path,"postingQZ"))
+    postingSimbol = utils.load_obj(os.path.join(path,"postingSimbol"))
 
     try:
         for k,v in indexer.postingDictAF.items():
+            if k in "Anthoni":
+                print(k)
             if k in postingAF.keys():
                 for i in v:
                     postingAF[k].append(i)
@@ -110,10 +113,10 @@ def mearge_posting(indexer):
     postingSimbol = sorted_dic_by_listval(postingSimbol)
 
     #save the mearge file in the disk
-    utils.save_obj(postingAF, "postingAF")
-    utils.save_obj(postingGP, "postingGP")
-    utils.save_obj(postingQZ, "postingQZ")
-    utils.save_obj(postingSimbol, "postingSimbol")
+    utils.save_obj(postingAF,os.path.join(path,"postingAF"))
+    utils.save_obj(postingGP,os.path.join(path, "postingGP"))
+    utils.save_obj(postingQZ,os.path.join(path, "postingQZ"))
+    utils.save_obj(postingSimbol,os.path.join(path ,"postingSimbol"))
 
 
 #def avg_veactor_toDoc(w2v_model, tokens):
@@ -137,7 +140,20 @@ def mearge_posting(indexer):
 #        if vectors:
 #            print(np.average(vectors))
 #            print("-----------------------------------")
-def run_engine(config):
+
+#def avg_vector(doc_dic, model):
+#    np_arry = np.zeros(300, )
+#    num_vec = 0
+#    for term in doc_dic.keys():
+#        if term in model.vocab:
+#            np_arry = np.add(np_arry,model.wv[term])
+#            num_vec += 1
+#    if num_vec > 0:
+#        return np.true_divide(np_arry, num_vec)
+#    else:
+#        return np_arry
+
+def run_engine(config,model):
     """
     :return:
     """
@@ -148,10 +164,12 @@ def run_engine(config):
     r = ReadFile(corpus_path=config.get__corpusPath())
     p = Parse(config)
     indexer = Indexer(config)
+    stem_outPath = config.get__outputPath()
+    doc_vec = {}
 
-    #indexer_without_stremming = Indexer(config)
+    if not os.path.exists(stem_outPath):
+        os.makedirs(stem_outPath)
 
-    #f = open("demofile2.txt", "a")
     #over all files in the dir of the corpus
     for subdir, dirs, files in os.walk(config.get__corpusPath()):
         for file in files:
@@ -163,71 +181,80 @@ def run_engine(config):
                 for idx, document in enumerate(documents_list):
                     # parse the document
                     parsed_document = p.parse_doc(document)
+                    # continue is return empty document
                     if parsed_document == None:
                         continue
-                    #print(parsed_document.term_doc_dictionary,parsed_document_stremming.term_doc_dictionary)
+                    #count the num of
                     number_of_documents += 1
-                    # index the document data
-                    indexer.add_new_doc(parsed_document)
-                    #avg_veactor_toDoc(model,parsed_document.term_doc_dictionary.keys())
+                    #vec_doc =avg_vector(parsed_document.term_doc_dictionary,model)
+                    #if vec_doc != None:
+                    #doc_vec[parsed_document.tweet_id] = vec_doc
 
-                    if num_doc_topost <= 100:
+                    indexer.add_new_doc(parsed_document)
+
+                    # index to posting the document data
+                    if num_doc_topost <= 1000:
                         num_doc_topost += 1
-                        #print(num_doc_topost)
                     else:
                         if to_mearge:
-                            #print("to mearge")
-                            mearge_posting(indexer)
+                            print("to_mearge")
+                            mearge_posting(indexer,stem_outPath)
                             indexer.init_posting()
                             to_mearge = True
                         else:
-                            utils.save_obj(indexer.postingDictAF, "postingAF")
-                            utils.save_obj(indexer.postingDictGP, "postingGP")
-                            utils.save_obj(indexer.postingDictQZ, "postingQZ")
-                            utils.save_obj(indexer.postingDictSimbol, "postingSimbol")
+                            utils.save_obj(indexer.postingDictAF, os.path.join(stem_outPath,"postingAF"))
+                            utils.save_obj(indexer.postingDictGP, os.path.join(stem_outPath,"postingGP"))
+                            utils.save_obj(indexer.postingDictQZ, os.path.join(stem_outPath,"postingQZ"))
+                            utils.save_obj(indexer.postingDictSimbol, os.path.join(stem_outPath,"postingSimbol"))
                             indexer.init_posting()
                             to_mearge = True
                         num_doc_topost = 0
-                        #posting_num+=1
+
                     #print("num of doc", number_of_documents)
 
-                    if number_of_documents == 1000:
+                    if number_of_documents == 5000:
                         break
-            if number_of_documents == 1000:
+            if number_of_documents == 5000:
                 break
-        if number_of_documents == 1000:
+        if number_of_documents == 5000:
             break
 
-    indexer.add_idf(number_of_documents)
-    utils.save_obj(indexer.inverted_idx, "inverted_idx")
+    mearge_posting(indexer, stem_outPath)
+    #utils.save_obj(indexer.postingDictAF, os.path.join(stem_outPath, "postingAF"))
+    #utils.save_obj(indexer.postingDictGP, os.path.join(stem_outPath, "postingGP"))
+    #utils.save_obj(indexer.postingDictQZ, os.path.join(stem_outPath, "postingQZ"))
+    #utils.save_obj(indexer.postingDictSimbol, os.path.join(stem_outPath, "postingSimbol"))
+
+
+
+    # index the inverted index
+    utils.save_obj(indexer.inverted_idx,os.path.join(stem_outPath, "inverted_idx"))
+    #utils.save_obj(doc_vec,os.path.join(stem_outPath, "doc_vector"))
+
     print('Finished parsing and indexing. Starting to export files')
 
-#    utils.save_obj(indexer_without_stremming.inverted_idx, "inverted_idx_without_stremming")
-#    utils.save_obj(indexer_without_stremming.postingDict, "posting_without_stremming")
-    #utils.save_obj(indexer.inverted_idx, "inverted_idx")
-    #utils.save_obj(indexer.postingDict, "posting")
     return number_of_documents
 
-def load_index(name_index):
-    print('Load inverted index')
-    inverted_index = utils.load_obj(name_index)
-    return inverted_index
+#def load_index(name_index):
+#    print('Load inverted index')
+#    inverted_index = utils.load_obj(name_index)
+#    return inverted_index
 
 
-def search_and_rank_query(query,inverted_index,k,config):
+def search_and_rank_query(query,inverted_index,k,config,model):
     p = Parse(config)
-    #query_as_list = p.parse_sentence(query)
+    #parse the query ,return list of all the terms
     query_as_list = p.parse_sentence(query)[0]
 
-    #if config.toStem:
-    #    s = Stemmer()
-    #    query_as_list = s.stem_term(query_as_list)
-
+    #searcher
     searcher = Searcher(inverted_index,config)
-    relevant_docs , query_tf = searcher.relevant_docs_from_posting(query_as_list)
-    #query_tf = searcher.freq_terms_query(query_as_list)
-    ranked_docs = searcher.ranker.rank_relevant_doc(relevant_docs,query_tf)
-    print(ranked_docs)
+    relevant_docs = searcher.relevant_docs_from_posting(query_as_list,model) #, query_tf = searcher.relevant_docs_from_posting(query_as_list,model)
+
+    #calc the freq of query and the vector of the query
+    query_tf = searcher.freq_terms_query(query_as_list)
+    vec_query = searcher.avg_vector(query_tf.keys(),model)
+
+    ranked_docs = searcher.ranker.rank_relevant_doc(relevant_docs,query_tf,vec_query)
     return searcher.ranker.retrieve_top_k(ranked_docs, k)
 
 
@@ -241,7 +268,8 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
     config.savedFileMainFolder = output_path
     config.toStem = stemming
 
-    number_of_documents = run_engine(config)
+    model = utils.load_GoogleNews_vectors_negative300('GoogleNews-vectors-negative300.bin')
+    number_of_documents = run_engine(config,model)
     config.number_of_documents = number_of_documents
 
     now_after_all = datetime.now()
@@ -257,16 +285,21 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
     if num_doc_to_retrive>2000:
         num_doc_to_retrive=2000
 
+    now_after_all = datetime.now()
+    print("Diff Time =", now_after_all - now)
+    inverted_index = utils.load_inverted_index(os.path.join(config.get__outputPath(), "inverted_idx"))
+    now_after_all = datetime.now()
+    print("Diff Time =", now_after_all - now)
 
-    inverted_index = load_index("inverted_idx")
+
 
     if queries:
-        with open('result.csv', 'w', newline='') as file:
+        with open('results.csv', 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['query_id', 'tweet id', 'score'])
             if isinstance(queries, list):
                 for query in range(len(queries)):
-                    for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config):
+                    for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config,model):
                         print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
                         writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
@@ -274,7 +307,7 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
                 file = open(queries, 'r')
                 queries = file.readlines()
                 for query in range(list(queries)):
-                    for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config):
+                    for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config,model):
                         print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
                         writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 

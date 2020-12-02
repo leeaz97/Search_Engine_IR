@@ -7,6 +7,11 @@ def load_GoogleNews_vectors_negative300(filename):
     model = KeyedVectors.load_word2vec_format(filename, binary=True)
     return model
 
+def load_inverted_index(name_index):
+    inverted_index = load_obj(name_index)
+    return inverted_index
+
+
 def save_obj(obj, name):
     """
     This function save an object as a pickle.

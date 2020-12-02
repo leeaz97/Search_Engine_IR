@@ -10,7 +10,9 @@ import math
 import keras_preprocessing.text as keras_t
 from nltk.stem.wordnet import WordNetLemmatizer
 
-sp = spacy.load('en_core_web_sm')
+# define the document
+# tokenize the document
+#sp = spacy.load('en_core_web_sm')
 
 class Parse:
 
@@ -87,14 +89,14 @@ class Parse:
                 if i < 1000:
                     n_list.append(str(i))
                 # bigger than Thousand
-                elif 1000000 <= i < 1000000000:
+                elif i >= 1000 and i < 1000000:
                     #print(i,type(i),i%1000)
                     if i % 1000 == 0:
                         n_list.append(str(int(i/1000))+"K")
                     else:
                         n_list.append(str(float(i/1000))+"K")
                 # bigger than Million
-                elif i >= 1000000 and i < 1000000000:
+                elif 1000000 <= i < 1000000000:
                     if i % 1000000 == 0:
                         n_list.append(str(int(i/1000000))+"M")
                     else:
@@ -149,6 +151,9 @@ class Parse:
         phrase = re.sub(r"can\'t", "can not", phrase)
         phrase = re.sub(r"don\'t", "do not", phrase)
         phrase = re.sub(r"doesn\'t", "does not", phrase)
+        phrase = re.sub(r"haven \'t", "have not", phrase)
+        phrase = re.sub(r"(?i)i\'ve", "i have", phrase)
+        phrase = re.sub(r"(?i)i\'ll", "i have", phrase)
 
         # general
         phrase = re.sub(r"n\'t", " not", phrase)
@@ -321,129 +326,187 @@ class Parse:
         :param text:
         :return:
         """
-        hashtags=[]
-        tags=[]
-        dollar=[]
-        percent=[]
+        #hashtags=[]
+        #tags=[]
+        #dollar=[]
+        #percent=[]
         text_tokens_split=[]
 
-        #remove_emoji = self.remove_Emojify(text)
-        #replace_word_to_num = self.text2int(remove_emoji)
-        #remove_and = re.sub(r'\s0\s', " ", remove_emoji)
-        remove_url = self.remove_urlTwwit_from_text(text)
-        decontracted = self.decontracted(remove_url)
+        #print(text)
+        # remove_emoji = self.remove_Emojify(text)
+        # replace_word_to_num = self.text2int(remove_emoji)
+        # remove_and = re.sub(r'\s0\s', " ", remove_emoji)
+        # remove_url = self.remove_urlTwwit_from_text(text)
 
-        # clean_text
-        decontracted = re.sub('[^a-zA-Z0-9-!@\\\$%\^&*{}\[\]|/\'\":;><.,`~?\#]+', r" ", decontracted)
+        # superate words with ends like: 't/'d
+        decontracted = self.decontracted(text)
+
+        # clean_text from garbage chars
+        decontracted = re.sub('[^a-zA-Z0-9-!\\\$%^&*{}\[\]|/\'\":;><,.`~?]+', r" ", decontracted)
+
         #print(decontracted)
 
-        #"%" in text or
-        if "percent" in decontracted or "percentage" in decontracted:
-            decontracted = self.parse_percent_word(decontracted)
-         #   print("remove precent",decontracted)
+        # replace all percentage to "%" in text
+        decontracted = re.sub(r'(\d[\d.,]*?)\s?percent(age)*[s]{0,1}', "\\1%", decontracted)
 
-        if "dollar" in decontracted:
-            decontracted = self.parse_dollar_word(decontracted)
-        #    print("remove dollar",decontracted)
+        # replace all dollar to "$" in text
+        decontracted = re.sub(r'(\d[\d., ]*?)\sdollar[s]{0,1}', "\\1$", decontracted)
 
-        if "$" in decontracted:
-            dollar = self.parse_dollar(decontracted)
+        # create list of words with "$" in decontracted:
+        start_dollar = re.findall(r'(\$\d[\d., ]*)', decontracted)
+        end_dollar = re.findall(r'(\d[\d., ]*?\$)\s*', decontracted)
+        dollar = start_dollar + end_dollar
 
-        if "%" in decontracted:
-            percent = self.parse_percent(decontracted)
+        # create list of words with "%" in decontracted:
+        percent = re.findall(r'(\d[\d., ]*?%)\s*', decontracted)
         #print("txt: ", decontracted)
-        # replacing versions of covid to "covid"
-        # decontracted = re.sub("(?i)[a-zA-Z]?covid[a-zA-Z]?-?~?_?1?9?[a-zA-Z]?|(?i)[a-zA-Z]?corona[a-zA-Z]?-?~?_?1?9?[a-zA-Z]?", r"covid", decontracted, flags=re.IGNORECASE)
+
+        # replacing all versions of COVID-19 to "covid"
+        decontracted = re.sub(
+            "(?i)[a-zA-Z]*covid[a-zA-Z]*-?~?_?1?9?[a-zA-Z]?|(?i)[a-zA-Z]*corona[a-zA-Z]*-?~?_?1?9?[a-zA-Z]*", r"covid",
+            decontracted, flags=re.IGNORECASE)
+        # s_covid = '((?i)^([#@]+)[.]*covid[.]*virus?-?~?_?\'?1?9?[.]*)'
+        # s_coron = '((?i)^([#@]+)[.]*corona[.]*virus?-?~?_?\'?1?9?[a-zA-Z]*)'
+        # replace_covid = re.compile(s_covid + '|' + s_coron)
         #
+        # for ma in re.finditer(replace_covid, decontracted):
+        #     #if kind of covid, covid-19...
+        #     if (ma.group(1)):
+        #         ma.group(1).translate(str.maketrans("covid", ma.group(1)))
+        #
+        #         decontracted = decontracted.replace(ma.group(1), "covid")
+        #     #if kind of corona, coronavirus...
+        #     if (ma.group(2)):
+        #         decontracted = decontracted.replace(ma.group(2), "covid")
+
         # replacing fractions to rationals
+        # fraction with integer
         decontracted = re.sub("(\d+) (\d+)/(\d+)",
                               lambda x: "{:.2f}".format((int(x.group(1))) + (float(x.group(2)) / int(x.group(3)))),
                               decontracted,
                               flags=re.IGNORECASE)
+        # only fraction
         decontracted = re.sub("(\d+)/(\d+)", lambda x: "{:.2f}".format(int(x.group(1)) / int(x.group(2))), decontracted,
                               flags=re.IGNORECASE)
-        s_covid = '((?i)^([#@]+)[.]*covid[.]*virus?-?~?_?\'?1?9?[.]*)'
-        s_coron = '((?i)^([#@]+)[.]*corona[.]*virus?-?~?_?\'?1?9?[a-zA-Z]*)'
-        #s_frach = re.compile(r'(\d+) (\d+)/(\d+)')
-        #s_frac = re.compile(r'(\d+)/(\d+)')
-        abc = re.compile(s_covid + '|' + s_coron)
-        i = 0
-        for ma in re.finditer(abc, decontracted):
-            i += 1
-            # print (i,": ",ma.groups())
-            if (ma.group(1)):
-                print("1", ma.group(1))
-                decontracted = decontracted.replace(ma.group(1), "covid")
-                # re.sub(ma, "covid")
-            if (ma.group(2)):
-                print("2", ma.group(2))
-                decontracted = decontracted.replace(ma.group(2), "covid")
+        # s_frach = re.compile(r'(\d+) (\d+)/(\d+)')
+        # s_frac = re.compile(r'(\d+)/(\d+)')
 
-        # print("covid: ", decontracted)
-        # text_tokens = word_tokenize(decontracted)
-        text_tokens = keras_t.text_to_word_sequence(decontracted, filters='.()*+=:;\"`<>!?“[]}{\n\t', lower=False,
+        # extract tokens from text
+        text_tokens = keras_t.text_to_word_sequence(decontracted, filters='()*+=:;\"`|/\\<>!?“[]}{\n\t', lower=False,
                                                     split=" ")
-        # remove
-        # text_tokens=re.sub("^&\d?", "", text_tokens)
-
-        # text_regex = regexp_tokenize(decontracted, pattern="[ .():;\"<>!?“\[\]}{\n\t]", gaps=True)
-        # text_token_keras = keras_t.text_to_word_sequence(decontracted)
-        # print("nltk: ", text_tokens)
-        #print("keras: ", text_tokens)
-        #text_tokens = word_tokenize(decontracted)
         #print(text_tokens)
 
-        for i in text_tokens:
-            if "/" in i:
-                for j in i.split("/"):
-                    text_tokens_split.append(j)
-            else:
-                text_tokens_split.append(i)
-
-        #text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
+        # text_tokens_without_stopwords = [w.lower() for w in text_tokens if w not in self.stop_words]
         text_tokens_without_stopwords = [w for w in text_tokens_split if w.lower() not in self.stop_words]
-        #print("token", text_tokens)
-        #print("token without_stopwords", text_tokens_without_stopwords)
 
-        if "#" in text_tokens:
-            hashtags = self.parse_hashtags(text_tokens_without_stopwords)
-         #   print( "hashtags" ,hashtags)
+        # handelling hashtags, numbers
+        itr = 0
+        for token in text_tokens:
+            itr = text_tokens.index(token)
 
-        if "@" in text_tokens:
-            tags = self.parse_tags(text_tokens_without_stopwords)
-         #   print("tags" , tags)
+            # handelling hashtags
 
-        text_tokens_without_stopwords = self.num_Billion_Million_Thousand(text_tokens_without_stopwords)
-        #if text_tokens_without_stopwords:
-        #    print("big num",text_tokens_without_stopwords)
+            # save word without # hashtag
+            if ('#' in token):
+                text_tokens.append(token.replace('#', ''))
+                end_itr = (len(text_tokens)) - 1
+                # split by delimiter
+                # there is at lest one delimiter '_'
+                if '_' in text_tokens[end_itr]:
+                    for w in text_tokens[end_itr].split('_'):
+                        text_tokens.append(w)
+                # split by upper letter
+                # lst = []
+                for up_let in re.sub(r'([A-Z]+|[a-z]+)', r' \1', text_tokens[end_itr]).split():
+                    text_tokens.append(up_let)
 
-        remove_upper_exist = self.parse_LowerCaseOrUpperCase(text_tokens_without_stopwords)
+            # hendelling numbers
+            if re.match(r'^\d+$|^\d+?\.\d+?$|^\d+(\,+\d+)+$|^\d+(\,+\d+)+?\.\d+?$', token):
+                n = token
+                if "," in n:
+                    n = n.replace(",", "")
+                if "." in n:
+                    i = float(n)
+                    i = float("{:.3f}".format(i))
+                else:
+                    i = int(n)
+                if i < 1000:
+                    text_tokens[itr] = str(i)
+                # bigger than Thousand
+                elif i >= 1000 and i < 1000000:
+                    # print(i,type(i),i%1000)
+                    if i % 1000 == 0:
+                        text_tokens[itr] = re.sub('\d+.\d\d+', lambda x: "{:.3f}".format(int(i / 1000)) + "K",
+                                                  token)
+                    else:
+                        text_tokens[itr] = str("{:.3f}".format(i / 1000)) + "K"
+                        # bigger than Million
+                elif 1000000 <= i < 1000000000:
+                    if i % 1000000 == 0:
+                        text_tokens[itr] = re.sub('\d+.\d\d+', lambda x: "{:.3f}".format(int(i / 1000000)) + "M",
+                                                  token)
+                    else:
+                        text_tokens[itr] = re.sub('\d+.\d\d+', lambda x: "{:.3f}".format(float(i / 1000000)) + "M",
+                                                  token)
+                # bigger than Billion
+                else:
+                    if i % 1000000000 == 0:
+                        text_tokens[itr] = re.sub('\d+.\d\d+', lambda x: "{:.3f}".format(int(i / 1000000000)) + "B",
+                                                  token)
+                    else:
+                        text_tokens[itr] = re.sub('\d+.\d\d+',
+                                                  lambda x: "{:.3f}".format(float(i / 1000000000)) + "B", token)
 
-        remove_punctuation = self.remove_punctuation(remove_upper_exist)
-        #if remove_punctuation:
+            # hendle upper \lowercase
+            if token.lower() in text_tokens:
+                text_tokens[itr] = token.lower()
+
+            # remove words with 1 letter
+            if (len(token) < 2):
+                text_tokens[itr] = ''
+                text_tokens.remove('')
+
+            # remove $ from words
+            if (re.match(r'^\$[a-zA-Z]+|[aa-zA-Z]+\$[a-zA-Z]*', token)):
+                text_tokens[itr] = token.replace("$", '')
+            if (re.match('(?i)http|t.co', token)):
+                text_tokens[itr] = ''
+            if (re.match('[.].', token)):
+                text_tokens[itr] = token.replace(".", '')
+            if (re.match(r'&[a-zA-Z]+', token)):
+                text_tokens[itr] = token.replace("&", '')
+
+        # remove_upper_exist = parse_LowerCaseOrUpperCase(remove_urlTwwit_from_text())
+
+        # remove_punctuation = self.remove_punctuation(remove_upper_exist)
+        # if remove_punctuation:
         #    print("remove_punctuation",remove_punctuation)
 
-
-        sen = sp(decontracted)
-        names_and_entities = self.parse_names_and_entities(sen)
-        date_and_time = self.parse_Date_and_time(sen)
-        #print("names_and_entities",names_and_entities)
-        #print("--------------------------------------------------------------------------------------")
+        # sen = sp(decontracted)
+        #  names_and_entities = self.parse_names_and_entities(sen)
+        # date_and_time = self.parse_Date_and_time(sen)
+        # print("names_and_entities",names_and_entities)
+        # print("--------------------------------------------------------------------------------------")
         # insert the new name and entities to the token list
-        for e in names_and_entities:
-            #search if not exists in tokens
-            if str(e) not in remove_punctuation:
-                remove_punctuation.append(str(e))
-        # insert the new date\time to the token list
-        for e in date_and_time:
-            # search if not exists in tokens
-            if str(e) not in remove_punctuation:
-                remove_punctuation.append(str(e))
+        # for e in names_and_entities:
+        #     #search if not exists in tokens
+        #     if str(e) not in remove_punctuation:
+        #         remove_punctuation.append(str(e))
+        # # insert the new date\time to the token list
+        # for e in date_and_time:
+        #     # search if not exists in tokens
+        #     if str(e) not in remove_punctuation:
+        #         remove_punctuation.append(str(e))
 
-        full_tokens = remove_punctuation + tags + hashtags + dollar + percent
+        # Stemming
+        #if self.stemmer:
+        #    s = Stemmer()
+        #    text_tokens = s.stem_term(text_tokens)
 
-        #remove_punctuation + names_and_entities + tags + hashtags + date_and_time
-        return (full_tokens,len(remove_punctuation))
+        # remove_punctuation + names_and_entities + tags + hashtags + date_and_time
+        return (text_tokens, len(text_tokens))
+
+
 
 
     def parse_doc(self, doc_as_list):
@@ -536,9 +599,6 @@ class Parse:
         #max_tf the max frequnce of term in doc
         if term_dict:
             max_tf = max(term_dict.values())
-
-        #print(full_text)
-        #print(term_dict)
 
         if term_dict:
             nf = 1/math.sqrt(sum(pow(item,2) for item in term_dict.values()))
