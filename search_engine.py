@@ -20,10 +20,12 @@ def mearge_posting(indexer,path):
     postingQZ = utils.load_obj(os.path.join(path,"postingQZ"))
     postingSimbol = utils.load_obj(os.path.join(path,"postingSimbol"))
 
+    now = datetime.now()
+
     try:
         for k,v in indexer.postingDictAF.items():
-            if k in "Anthoni":
-                print(k)
+            #if k in "Anthoni":
+             #   print(k)
             if k in postingAF.keys():
                 for i in v:
                     postingAF[k].append(i)
@@ -42,6 +44,14 @@ def mearge_posting(indexer,path):
                     postingAF[k].append(i)
             else:
                 postingAF[k] = v
+
+                # sorting the posting file
+        postingAF = sorted_dic_by_listval(postingAF)
+        utils.save_obj(postingAF, os.path.join(path, "postingAF"))
+        indexer.postingDictAF ={}
+        postingAF = {}
+
+
 
         for k,v in indexer.postingDictGP.items():
             if k in postingGP.keys():
@@ -63,6 +73,11 @@ def mearge_posting(indexer,path):
             else:
                 postingGP[k] = v
 
+        postingGP = sorted_dic_by_listval(postingGP)
+        utils.save_obj(postingGP, os.path.join(path, "postingGP"))
+        indexer.postingDictGP = {}
+        postingGP = {}
+
         for k,v in indexer.postingDictQZ.items():
             if k in postingQZ.keys():
                 for i in v:
@@ -82,6 +97,11 @@ def mearge_posting(indexer,path):
                     postingQZ[k].append(i)
             else:
                 postingQZ[k] = v
+
+        postingQZ = sorted_dic_by_listval(postingQZ)
+        utils.save_obj(postingQZ, os.path.join(path, "postingGP"))
+        indexer.postingDictQZ = {}
+        postingQZ = {}
 
         for k,v in indexer.postingDictSimbol.items():
             if k in postingSimbol.keys():
@@ -103,20 +123,28 @@ def mearge_posting(indexer,path):
             else:
                 postingSimbol[k] = v
 
+        postingSimbol = sorted_dic_by_listval(postingSimbol)
+        utils.save_obj(postingSimbol, os.path.join(path, "postingGP"))
+        indexer.postingDictSimbol = {}
+        postingSimbol = {}
+
+        now_after_all = datetime.now()
+        print("Diff Time =", now_after_all - now)
+
     except:
         print('problem in mearg with the following key {}'.format(k))
 
     #sorting the posting file
-    postingAF = sorted_dic_by_listval(postingAF)
-    postingGP = sorted_dic_by_listval(postingGP)
-    postingQZ = sorted_dic_by_listval(postingQZ)
-    postingSimbol = sorted_dic_by_listval(postingSimbol)
+    #postingAF = sorted_dic_by_listval(postingAF)
+    #postingGP = sorted_dic_by_listval(postingGP)
+    #postingQZ = sorted_dic_by_listval(postingQZ)
+    #postingSimbol = sorted_dic_by_listval(postingSimbol)
 
     #save the mearge file in the disk
-    utils.save_obj(postingAF,os.path.join(path,"postingAF"))
-    utils.save_obj(postingGP,os.path.join(path, "postingGP"))
-    utils.save_obj(postingQZ,os.path.join(path, "postingQZ"))
-    utils.save_obj(postingSimbol,os.path.join(path ,"postingSimbol"))
+    #utils.save_obj(postingAF,os.path.join(path,"postingAF"))
+    #utils.save_obj(postingGP,os.path.join(path, "postingGP"))
+    #utils.save_obj(postingQZ,os.path.join(path, "postingQZ"))
+    #utils.save_obj(postingSimbol,os.path.join(path ,"postingSimbol"))
 
 
 #def avg_veactor_toDoc(w2v_model, tokens):
@@ -193,11 +221,11 @@ def run_engine(config,model):
                     indexer.add_new_doc(parsed_document)
 
                     # index to posting the document data
-                    if num_doc_topost <= 1000:
+                    if num_doc_topost <= 10000:
                         num_doc_topost += 1
                     else:
                         if to_mearge:
-                            print("to_mearge")
+                            #print("to_mearge")
                             mearge_posting(indexer,stem_outPath)
                             indexer.init_posting()
                             to_mearge = True
@@ -210,13 +238,13 @@ def run_engine(config,model):
                             to_mearge = True
                         num_doc_topost = 0
 
-                    #print("num of doc", number_of_documents)
+                    print("num of doc:", number_of_documents)
 
-                    if number_of_documents == 5000:
+                    if number_of_documents == 500000:
                         break
-            if number_of_documents == 5000:
+            if number_of_documents == 500000:
                 break
-        if number_of_documents == 5000:
+        if number_of_documents == 500000:
             break
 
     mearge_posting(indexer, stem_outPath)
@@ -258,7 +286,7 @@ def search_and_rank_query(query,inverted_index,k,config,model):
     return searcher.ranker.retrieve_top_k(ranked_docs, k)
 
 
-def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=True,queries=[],num_doc_to_retrive=2000):
+def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=False,queries=r"C:\Users\lazrati\Desktop\leeStudy\IR\queries.txt",num_doc_to_retrive=2000):
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
     print("Current Time =", current_time)
@@ -304,9 +332,11 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
                         writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
             else:
-                file = open(queries, 'r')
+                file = open(queries, 'r', encoding="utf8")
                 queries = file.readlines()
-                for query in range(list(queries)):
+                print(queries)
+                for query in range(len(queries)):
+                    #remove \n from string nd list
                     for doc_tuple in search_and_rank_query(queries[query], inverted_index, num_doc_to_retrive,config,model):
                         print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
                         writer.writerow([query, doc_tuple[0], doc_tuple[1]])
