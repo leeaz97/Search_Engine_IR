@@ -34,6 +34,5 @@ class Document:
         self.retweet_quoted_indices = retweet_quoted_indices
         self.max_tf = max_tf
         self.nf = nf
-        #self.v_doc = v_doc
-        #self.tf_normal = tf_normal
+
 

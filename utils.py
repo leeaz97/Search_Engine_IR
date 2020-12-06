@@ -21,8 +21,8 @@ def save_obj(obj, name):
     """
     with open(name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
-    with open(name + '.txt', 'w',encoding="utf-8") as f:
-        f.write(str(obj))
+    #with open(name + '.txt', 'w',encoding="utf-8") as f:
+    #    f.write(str(obj))
         f.closed
         #pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 

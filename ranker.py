@@ -22,19 +22,12 @@ class Ranker:
         ranking_doc = {}
         nf_query = 1/math.sqrt(sum(pow(item,2) for item in query_dict.values()))
 
-        #print(relevant_doc)
         for k,v in relevant_doc.items():
             for i in v.terms:
                 if i[0] in query_dict.keys():
-                    w_query = query_dict[i[0]]
-                else:
-                    w_query = 0
-                if k not in ranking_doc.keys():
-                    ranking_doc[k] = (i[1] * v.idf * w_query)
-                else:
-                    ranking_doc[k] += (i[1] * v.idf * w_query)
+                    rank = ( 0.4 * ((i[1] * query_dict[i[0]]) * (v.nf * nf_query)) + (1 - 0.4) * con_sin(v.vec_doc, query_vec))*v.num_show
+                    ranking_doc[k] = rank
 
-            ranking_doc[k] = 0.4 * (ranking_doc[k] / (v.nf * nf_query)) + (1 - 0.4) * con_sin(v.vec_doc, query_vec)
         return sorted(ranking_doc.items(), key=lambda item: item[1], reverse=True)
 
     @staticmethod

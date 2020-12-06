@@ -8,6 +8,7 @@ class Indexer:
         self.postingDictGP = {}
         self.postingDictQZ = {}
         self.postingDictSimbol = {}
+        self.document_collection = {}
         self.config = config
 
     def init_posting(self):
@@ -15,29 +16,28 @@ class Indexer:
         self.postingDictGP = {}
         self.postingDictQZ = {}
         self.postingDictSimbol = {}
+        self.document_collection = {}
 
-    #def add_idf(self,num_doc):
-    #    for k, v in self.inverted_idx.items():
-    #        self.inverted_idx[k] = (v, math.log10(num_doc/v))
-
-
-    def sorted_inverted(self):
+    #def sorted_inverted(self):
         #sort by key
-        dict(sorted(self.inverted_idx.items()))
+    #    dict(sorted(self.inverted_idx.items()))
+
         #sort by val
         #sorted( self.inverted_idx.items(), key=lambda x: x[1])
 
-
-
-    def sorted_posting(self,term,post_file):
+    def sorted_posting(self):#,term,post_file):
         # sort the posting by tweet_id
-        if post_file == "A-Fa-f":
+        #if post_file == "A-Fa-f":
+        for term in self.postingDictAF.keys():
             sorted(self.postingDictAF[term], key=lambda x: x[0])
-        elif post_file == "G-Pg-p":
+        #elif post_file == "G-Pg-p":
+        for term in self.postingDictGP.keys():
             sorted(self.postingDictGP[term], key=lambda x: x[0])
-        elif post_file == "Q-Zq-z":
+        #elif post_file == "Q-Zq-z":
+        for term in self.postingDictQZ.keys():
             sorted(self.postingDictQZ[term], key=lambda x: x[0])
-        elif post_file == "Simbol":
+        #elif post_file == "Simbol":
+        for term in self.postingDictSimbol.keys():
             sorted(self.postingDictSimbol[term], key=lambda x: x[0])
 
     def posting_by_FirstChar(self,term):#,pos):
@@ -62,12 +62,9 @@ class Indexer:
         # Go over each term in the doc
         for term in document_dictionary.keys():
             try:
-                if term.lower() == "anthoni":
-                    print(term)
-                    #print( self.postingDictGP[term])
-                    #print( self.postingDictGPpterm[term[0]+term[1]])
-                #continue if the term empty
-                if term =='':
+
+                # continue if the term empty
+                if term.lower() in ['', 'rt', 'https', 't.co']:
                     continue
                 #there is non meaning to one char so ont index thim
                 if len(term) == 1:
@@ -76,8 +73,11 @@ class Indexer:
                 post_file = self.posting_by_FirstChar(term)
                 pos = (document.tweet_id, document_dictionary[term],
                                   document.doc_length,
-                                  document_dictionary[term] / document.max_tf,
-                                  document.max_tf,document.nf,document.tweet_date,list(document_dictionary.keys()))
+                                  document.max_tf,document.nf,document.tweet_date) #,list(document_dictionary.keys()))
+
+
+                if document.tweet_id not in self.document_collection.keys():
+                    self.document_collection[document.tweet_id] = document_dictionary
 
                 # if the term Start with Upper
                 if term[0].isupper():
@@ -106,75 +106,59 @@ class Indexer:
                             else:
                                 self.postingDictSimbol[term.lower()].append(pos)
                         #sort the posting by tweet_id
-                        self.sorted_posting(term.lower(),post_file)
-
-                    #if term[0].lower()+term[1:] in self.inverted_idx.keys():
-                        #self.inverted_idx[term[0].lower()+term[1:]] += 1
-                        #if post_file == "A-Fa-f":
-                         #   if term[0].lower()+term[1:] not in self.postingDictAF.keys():
-                         #       self.postingDictAF[term[0].lower()+term[1:] ] = [pos]
-                         #   else:
-                         #       self.postingDictAF[term[0].lower()+term[1:] ].append(pos)
-                        #elif post_file == "G-Pg-p":
-                        #    if term[0].lower()+term[1:] not in self.postingDictGP.keys():
-                        #        self.postingDictGP[term[0].lower()+term[1:] ] = [pos]
-                        #    else:
-                        #        self.postingDictGP[term[0].lower()+term[1:] ].append(pos)
-                        #elif post_file == "Q-Zq-z":
-                        #    if term[0].lower()+term[1:] not in self.postingDictQZ.keys():
-                        #        self.postingDictQZ[term[0].lower()+term[1:] ] = [pos]
-                        #    else:
-                        #        self.postingDictQZ[term[0].lower()+term[1:] ].append(pos)
-                        #elif post_file == "Simbol":
-                        #    if term[0].lower()+term[1:] not in self.postingDictSimbol.keys():
-                        #        self.postingDictSimbol[term[0].lower()+term[1:] ] = [pos]
-                        #    else:
-                        #        self.postingDictSimbol[term[0].lower()+term[1:] ].append(pos)
-                        #sort the posting by tweet_id
-                        #self.sorted_posting(term[0].lower()+term[1:] ,post_file)
 
                     # if its start with upper and not exists in the inverted indexer
                     elif term not in self.inverted_idx.keys():
                         self.inverted_idx[term] = 1
                         # if new in index new in posting
                         if post_file == "A-Fa-f":
-                            self.postingDictAF[term] = [pos]
+                            #self.postingDictAF[term] = [pos]
+                            self.postingDictAF[term.lower()] = [pos]
                         elif post_file == "G-Pg-p":
-                            self.postingDictGP[term] = [pos]
+                            #self.postingDictGP[term] = [pos]
+                            self.postingDictGP[term.lower()] = [pos]
                         elif post_file == "Q-Zq-z":
-                            self.postingDictQZ[term] = [pos]
+                            #self.postingDictQZ[term] = [pos]
+                            self.postingDictQZ[term.lower()] = [pos]
                         elif post_file == "Simbol":
-                            self.postingDictSimbol[term] = [pos]
+                            #self.postingDictSimbol[term] = [pos]
+                            self.postingDictSimbol[term.lower()] = [pos]
 
                         # sort the posting by tweet_id
-                        self.sorted_posting(term, post_file)
+                        #self.sorted_posting(term, post_file)
 
                     else:
                         # if its start with upper and exists in the inverted indexer
                         self.inverted_idx[term] += 1
 
                         if post_file == "A-Fa-f":
-                            if term not in self.postingDictAF.keys():
-                                self.postingDictAF[term] = [pos]
+                            if term.lower() not in self.postingDictAF.keys():
+                                #self.postingDictAF[term] = [pos]
+                                self.postingDictAF[term.lower()] = [pos]
                             else:
-                                self.postingDictAF[term].append(pos)
+                                #self.postingDictAF[term].append(pos)
+                                self.postingDictAF[term.lower()].append(pos)
                         elif post_file == "G-Pg-p":
-                            if term not in self.postingDictGP.keys():
-                                self.postingDictGP[term] = [pos]
+                            if term.lower() not in self.postingDictGP.keys():
+                                #self.postingDictGP[term] = [pos]
+                                self.postingDictGP[term.lower()] = [pos]
                             else:
-                                self.postingDictGP[term].append(pos)
+                                #self.postingDictGP[term].append(pos)
+                                self.postingDictGP[term.lower()].append(pos)
                         elif post_file == "Q-Zq-z":
-                            if term not in self.postingDictQZ.keys():
-                                self.postingDictQZ[term] = [pos]
+                            if term.lower() not in self.postingDictQZ.keys():
+                                #self.postingDictQZ[term] = [pos]
+                                self.postingDictQZ[term.lower()] = [pos]
                             else:
-                                self.postingDictQZ[term].append(pos)
+                                #self.postingDictQZ[term].append(pos)
+                                self.postingDictQZ[term.lower()].append(pos)
                         elif post_file == "Simbol":
-                            if term not in self.postingDictSimbol.keys():
-                                self.postingDictSimbol[term] = []
+                            if term.lower() not in self.postingDictSimbol.keys():
+                                #self.postingDictSimbol[term] = [pos]
+                                self.postingDictSimbol[term.lower()] = [pos]
                             else:
-                                self.postingDictSimbol[term].append(pos)
-                        # sort the posting by tweet_id
-                        self.sorted_posting(term, post_file)
+                                #self.postingDictSimbol[term].append(pos)
+                                self.postingDictSimbol[term.lower()].append(pos)
 
                 else:
                     # if the term Start with Lower and exists as First charchter Upper in the inverted indexer,remove from the inverted index and postingfile
@@ -183,91 +167,115 @@ class Indexer:
                         self.inverted_idx[term] = inv_data + 1
 
                         if post_file == "A-Fa-f":
-                            if term[0].upper()+term[1:] in self.postingDictAF.keys():
-                                self.postingDictAF[term] = []
-                                temp = self.postingDictAF.pop(term[0].upper()+term[1:])
-                                for i in temp:
-                                    self.postingDictAF[term].append(i)
-                                self.postingDictAF[term].append(pos)
+                            #if term[0].upper()+term[1:] in self.postingDictAF.keys():
+                            #    self.postingDictAF[term] = []
+                            #    temp = self.postingDictAF.pop(term[0].upper()+term[1:])
+                            #    for i in temp:
+                            #        self.postingDictAF[term].append(i)
+                            #    self.postingDictAF[term].append(pos)
+                            #else:
+                            #    self.postingDictAF[term] = [pos]
+                            if term.lower() not in self.postingDictAF.keys():
+                                self.postingDictAF[term.lower()] = [pos]
                             else:
-                                self.postingDictAF[term] = [pos]
+                                self.postingDictAF[term.lower()].append(pos)
 
                         elif post_file == "G-Pg-p":
-                            if term[0].upper()+term[1:]  in self.postingDictGP.keys():
-                                self.postingDictGP[term] = []
-                                temp = self.postingDictGP.pop(term[0].upper() + term[1:])
-                                for i in temp:
-                                    self.postingDictGP[term].append(i)
-                                self.postingDictGP[term].append(pos)
+                            #if term[0].upper()+term[1:]  in self.postingDictGP.keys():
+                            #    self.postingDictGP[term] = []
+                            #    temp = self.postingDictGP.pop(term[0].upper() + term[1:])
+                            #    for i in temp:
+                            #        self.postingDictGP[term].append(i)
+                            #    self.postingDictGP[term].append(pos)
+                            #else:
+                            #    self.postingDictGP[term] = [pos]
+                            if term.lower() not in self.postingDictGP.keys():
+                                self.postingDictGP[term.lower()] = [pos]
                             else:
-                                self.postingDictGP[term] = [pos]
+                                self.postingDictGP[term.lower()].append(pos)
 
                         elif post_file == "Q-Zq-z":
-                            if term[0].upper()+term[1:] in self.postingDictQZ.keys():
-                                self.postingDictQZ[term] = []
-                                temp = self.postingDictQZ.pop(term[0].upper() + term[1:])
-                                for i in temp:
-                                    self.postingDictQZ[term].append(i)
-                                self.postingDictQZ[term].append(pos)
+                            #if term[0].upper()+term[1:] in self.postingDictQZ.keys():
+                            #    self.postingDictQZ[term] = []
+                            #    temp = self.postingDictQZ.pop(term[0].upper() + term[1:])
+                            #    for i in temp:
+                            #        self.postingDictQZ[term].append(i)
+                            #    self.postingDictQZ[term].append(pos)
+                            #else:
+                            #    self.postingDictQZ[term] = [pos]
+                            if term.lower() not in self.postingDictQZ.keys():
+                                self.postingDictQZ[term.lower()] = [pos]
                             else:
-                                self.postingDictQZ[term] = [pos]
+                                self.postingDictQZ[term.lower()].append(pos)
 
                         elif post_file == "Simbol":
-                            if term[0].upper()+term[1:]  in self.postingDictSimbol.keys():
-                                self.postingDictSimbol[term] = []
-                                temp = self.postingDictSimbol.pop(term[0].upper() + term[1:])
-                                for i in temp:
-                                    self.postingDictSimbol[term].append(i)
-                                self.postingDictSimbol[term].append(pos)
+                            #if term[0].upper()+term[1:]  in self.postingDictSimbol.keys():
+                            #    self.postingDictSimbol[term] = []
+                            #    temp = self.postingDictSimbol.pop(term[0].upper() + term[1:])
+                            #    for i in temp:
+                            #        self.postingDictSimbol[term].append(i)
+                            #    self.postingDictSimbol[term].append(pos)
+                            #else:
+                            #    self.postingDictSimbol[term] = [pos]
+                            if term.lower() not in self.postingDictSimbol.keys():
+                                self.postingDictSimbol[term.lower()] = [pos]
                             else:
-                                self.postingDictSimbol[term] = [pos]
+                                self.postingDictSimbol[term.lower()].append(pos)
 
-                        # sort the posting by tweet_id
-                        self.sorted_posting(term, post_file)
 
                     # if the term Start with Lower or digit or #@$ and not exists in the inverted indexer
                     elif term not in self.inverted_idx.keys():
                             self.inverted_idx[term] = 1
 
                             if post_file == "A-Fa-f":
-                                self.postingDictAF[term] = [pos]
+                                #self.postingDictAF[term] = [pos]
+                                self.postingDictAF[term.lower()] = [pos]
                             elif post_file == "G-Pg-p":
-                                self.postingDictGP[term] = [pos]
+                                #self.postingDictGP[term] = [pos]
+                                self.postingDictGP[term.lower()] = [pos]
                             elif post_file == "Q-Zq-z":
-                                self.postingDictQZ[term] = [pos]
+                                #self.postingDictQZ[term] = [pos]
+                                self.postingDictQZ[term.lower()] = [pos]
                             elif post_file == "Simbol":
-                                self.postingDictSimbol[term] = [pos]
+                                #self.postingDictSimbol[term] = [pos]
+                                self.postingDictSimbol[term.lower()] = [pos]
 
-                            # sort the posting by tweet_id
-                            self.sorted_posting(term, post_file)
 
                     else:
                         # if its start with Lower and exists in the inverted indexer
                         self.inverted_idx[term] += 1
 
                         if post_file == "A-Fa-f":
-                            if term not in self.postingDictAF.keys():
-                                self.postingDictAF[term] = [pos]
+                            if term.lower() not in self.postingDictAF.keys():
+                                #self.postingDictAF[term] = [pos]
+                                self.postingDictAF[term.lower()] = [pos]
                             else:
-                                self.postingDictAF[term].append(pos)
+                                #self.postingDictAF[term].append(pos)
+                                self.postingDictAF[term.lower()].append(pos)
                         elif post_file == "G-Pg-p":
-                            if term not in self.postingDictGP.keys():
-                                self.postingDictGP[term] = [pos]
+                            if term.lower() not in self.postingDictGP.keys():
+                                #self.postingDictGP[term] = [pos]
+                                self.postingDictGP[term.lower()] = [pos]
                             else:
-                                self.postingDictGP[term].append(pos)
+                                #self.postingDictGP[term].append(pos)
+                                self.postingDictGP[term.lower()].append(pos)
                         elif post_file == "Q-Zq-z":
-                            if term not in self.postingDictQZ.keys():
-                                self.postingDictQZ[term] = [pos]
+                            if term.lower() not in self.postingDictQZ.keys():
+                                #self.postingDictQZ[term] = [pos]
+                                self.postingDictQZ[term.lower()] = [pos]
                             else:
-                                self.postingDictQZ[term].append(pos)
+                                #self.postingDictQZ[term].append(pos)
+                                self.postingDictQZ[term.lower()].append(pos)
                         elif post_file == "Simbol":
-                            if term not in self.postingDictSimbol.keys():
-                                self.postingDictSimbol[term] = [pos]
+                            if term.lower() not in self.postingDictSimbol.keys():
+                                #self.postingDictSimbol[term] = [pos]
+                                self.postingDictSimbol[term.lower()] = [pos]
                             else:
-                                self.postingDictSimbol[term].append(pos)
+                                #self.postingDictSimbol[term].append(pos)
+                                self.postingDictSimbol[term.lower()].append(pos)
 
                         # sort the posting by tweet_id
-                        self.sorted_posting(term, post_file)
+                        #self.sorted_posting(term, post_file)
 
             except:
                 print('problem with the following key {}'.format(term))
