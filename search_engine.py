@@ -71,21 +71,36 @@ def merge_doc_collection(path,pos_num):
     utils.save_obj(posting, path)
 
 def main_merge(stem_outPath,posting_num):
-    merge_posting(os.path.join(stem_outPath, "postingAF"),posting_num)
-    merge_posting(os.path.join(stem_outPath, "postingGP"),posting_num)
-    merge_posting(os.path.join(stem_outPath, "postingQZ"),posting_num)
-    merge_posting(os.path.join(stem_outPath, "postingSimbol"),posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictTOI"),posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictSWC"),posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictBPH"),posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictFMD"),posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictREL"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictNAG"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictUKVY"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictJQZX"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictNum"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictHashtag"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictStrudel"), posting_num)
+    merge_posting(os.path.join(stem_outPath, "postingDictSimbol"), posting_num)
 
     merge_doc_collection(os.path.join(stem_outPath, "document_collection"),posting_num)
 
 
 def save_posting_and_doc_collection(indexer,path,posting_num):
     utils.save_obj(indexer.document_collection, os.path.join(path, "document_collection_" + str(posting_num)))
-    utils.save_obj(indexer.postingDictAF, os.path.join(path, "postingAF_" + str(posting_num)))
-    utils.save_obj(indexer.postingDictGP, os.path.join(path, "postingGP_" + str(posting_num)))
-    utils.save_obj(indexer.postingDictQZ, os.path.join(path, "postingQZ_" + str(posting_num)))
-    utils.save_obj(indexer.postingDictSimbol, os.path.join(path, "postingSimbol_" + str(posting_num)))
-
+    utils.save_obj(indexer.postingDictTOI, os.path.join(path, "postingDictTOI_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictSWC, os.path.join(path, "postingDictSWC_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictBPH, os.path.join(path, "postingDictBPH_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictFMD, os.path.join(path, "postingDictFMD_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictREL, os.path.join(path, "postingDictREL_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictNAG, os.path.join(path, "postingDictNAG_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictUKVY, os.path.join(path, "postingDictUKVY_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictJQZX, os.path.join(path, "postingDictJQZX_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictNum, os.path.join(path, "postingDictNum_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictHashtag, os.path.join(path, "postingDictHashtag_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictStrudel, os.path.join(path, "postingDictStrudel_" + str(posting_num)))
+    utils.save_obj(indexer.postingDictSimbol, os.path.join(path, "postingDictSimbol_" + str(posting_num)))
 
 def run_engine(config):
     """
@@ -128,7 +143,7 @@ def run_engine(config):
                     indexer.add_new_doc(parsed_document)
 
                     # index to posting the document data
-                    if num_doc_topost < 200000:
+                    if num_doc_topost <= 200000:
                         num_doc_topost += 1
                     else:
                         #indexer.sorted_posting()
@@ -154,14 +169,21 @@ def run_engine(config):
                 break
         if number_of_documents == 500000:
             break
+
     print(posting_num)
 
+    #need to save the posting that not save in the posting
+    #if number_of_documents % 500000 > 0:
     save_posting_and_doc_collection(indexer,stem_outPath,posting_num)
 
     #indexer.sorted_inverted()
+
     utils.save_obj(sorted_dic_by_key(indexer.inverted_idx), os.path.join(stem_outPath, "inverted_idx"))
 
-    print('Finished parsing and indexing. Starting to export files')
+    indexer.remove_uniqe_entities()
+    utils.save_obj(sorted_dic_by_key(indexer.inverted_idxEntities), os.path.join(stem_outPath, "inverted_idx_entities"))
+
+    #print('Finished parsing and indexing. Starting to export files')
 
     return number_of_documents,posting_num
 
@@ -180,7 +202,6 @@ def search_and_rank_query(query,inverted_index,document_collection,k,config,mode
     #searcher
     searcher = Searcher(inverted_index,document_collection,config)
     relevant_docs = searcher.relevant_docs_from_posting(query_as_list,model) #, query_tf = searcher.relevant_docs_from_posting(query_as_list,model)
-    print(len(relevant_docs))
     #calc the freq of query and the vector of the query
     query_tf = searcher.freq_terms_query(query_as_list)
     vec_query = searcher.avg_vector(query_tf.keys(),model)
@@ -206,8 +227,8 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
     now_after_all = datetime.now()
     print("Diff Time after mearge =", now_after_all-now)
 
-    config.number_of_documents = corpus_num_docs
-    #config.number_of_documents = 500000
+    #config.number_of_documents = corpus_num_docs
+    config.number_of_documents = 500000
     #query = input("Please enter a query: ")
     queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
 "The seasonal flu kills more people every year in the U.S. than COVID-19 has to date.",
@@ -250,6 +271,8 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
         queries = list(
             filter(None, (line.rstrip() for line in open(r"C:\Users\lazrati\Desktop\leeStudy\IR\queries.txt",encoding="utf8"))))
 
+    now_after_all = datetime.now()
+    print("Diff Time after mearge =", now_after_all-now)
 
     if queries:
         inverted_index = utils.load_inverted_index(os.path.join(config.get__outputPath(), "inverted_idx"))
@@ -265,13 +288,10 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
             #if isinstance(queries, list):
             for query in range(len(queries)):
                 for doc_tuple in search_and_rank_query(queries[query], inverted_index,document_collection, num_doc_to_retrive,config,model):
-                    print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+                    #print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+                    print('query: {}, tweet id: {}, score (unique common words with query): {}'.format(query,doc_tuple[0], doc_tuple[1]))
                     writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
 
-        now_after_all = datetime.now()
-        print("Diff Time after queries =", now_after_all - now)
-
-
-
-
+    now_after_all = datetime.now()
+    print("Diff Time after queries =", now_after_all - now)

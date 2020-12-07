@@ -4,51 +4,120 @@ class Indexer:
 
     def __init__(self, config):
         self.inverted_idx = {}
-        self.postingDictAF = {}
-        self.postingDictGP = {}
-        self.postingDictQZ = {}
+        self.postingDictTOI = {}
+        self.postingDictSWC = {}
+        self.postingDictBPH = {}
+        self.postingDictFMD = {}
+        self.postingDictREL = {}
+        self.postingDictNAG = {}
+        self.postingDictUKVY = {}
+        self.postingDictJQZX = {}
+        self.postingDictNum = {}
+        self.postingDictHashtag = {}
+        self.postingDictStrudel = {}
         self.postingDictSimbol = {}
         self.document_collection = {}
+        self.postingEntities = {}
+        self.inverted_idxEntities = {}
         self.config = config
 
     def init_posting(self):
-        self.postingDictAF = {}
-        self.postingDictGP = {}
-        self.postingDictQZ = {}
+        self.inverted_idx = {}
+        self.postingDictTOI = {}
+        self.postingDictSWC = {}
+        self.postingDictBPH = {}
+        self.postingDictFMD = {}
+        self.postingDictREL = {}
+        self.postingDictNAG = {}
+        self.postingDictUKVY = {}
+        self.postingDictJQZX = {}
+        self.postingDictNum = {}
+        self.postingDictHashtag = {}
+        self.postingDictStrudel = {}
         self.postingDictSimbol = {}
         self.document_collection = {}
 
-    #def sorted_inverted(self):
-        #sort by key
-    #    dict(sorted(self.inverted_idx.items()))
+    def remove_uniqe_entities(self):
+        for k,v in self.inverted_idxEntities.items():
+            if v ==1 :
+                self.inverted_idxEntities.pop(k)
+                self.postingEntities.pop(k.lower())
 
-        #sort by val
-        #sorted( self.inverted_idx.items(), key=lambda x: x[1])
 
-    def sorted_posting(self):#,term,post_file):
-        # sort the posting by tweet_id
-        #if post_file == "A-Fa-f":
-        for term in self.postingDictAF.keys():
-            sorted(self.postingDictAF[term], key=lambda x: x[0])
-        #elif post_file == "G-Pg-p":
-        for term in self.postingDictGP.keys():
-            sorted(self.postingDictGP[term], key=lambda x: x[0])
-        #elif post_file == "Q-Zq-z":
-        for term in self.postingDictQZ.keys():
-            sorted(self.postingDictQZ[term], key=lambda x: x[0])
-        #elif post_file == "Simbol":
-        for term in self.postingDictSimbol.keys():
-            sorted(self.postingDictSimbol[term], key=lambda x: x[0])
+    def posting(self,term,doc_details):
 
-    def posting_by_FirstChar(self,term):#,pos):
-        if re.match(r'^[A-Fa-f]', term):
-            return "A-Fa-f"
-        elif re.match(r'^[G-Pg-p]', term):
-            return "G-Pg-p"
-        elif re.match(r'^[Q-Zq-z]', term):
-            return "Q-Zq-z"
-        else:
-            return "Simbol"
+        if re.match(r'^[TOItoi]', term):
+            if term.lower() not in self.postingDictTOI.keys():
+                self.postingDictTOI[term.lower()] = [doc_details]
+            else:
+                self.postingDictTOI[term.lower()].append(doc_details)
+
+        elif re.match(r'^[SWCswc]', term):
+            if term.lower() not in self.postingDictSWC.keys():
+                self.postingDictSWC[term.lower()] = [doc_details]
+            else:
+                self.postingDictSWC[term.lower()].append(doc_details)
+
+        elif re.match(r'^[BPHbph]', term):
+            if term.lower() not in self.postingDictBPH.keys():
+                self.postingDictBPH[term.lower()] = [doc_details]
+            else:
+                self.postingDictBPH[term.lower()].append(doc_details)
+
+        elif re.match(r'^[FMDtmd]', term):
+            if term.lower() not in self.postingDictFMD.keys():
+                self.postingDictFMD[term.lower()] = [doc_details]
+            else:
+                self.postingDictFMD[term.lower()].append(doc_details)
+
+        elif re.match(r'^[RELrel]', term):
+            if term.lower() not in self.postingDictREL.keys():
+                self.postingDictREL[term.lower()] = [doc_details]
+            else:
+                self.postingDictREL[term.lower()].append(doc_details)
+
+        elif re.match(r'^[NAGnag]', term):
+            if term.lower() not in self.postingDictNAG.keys():
+                self.postingDictNAG[term.lower()] = [doc_details]
+            else:
+                self.postingDictNAG[term.lower()].append(doc_details)
+
+        elif re.match(r'^[UKVYukvy]', term):
+            if term.lower() not in self.postingDictUKVY.keys():
+                self.postingDictUKVY[term.lower()] = [doc_details]
+            else:
+                self.postingDictUKVY[term.lower()].append(doc_details)
+
+        elif re.match(r'^[JQZXjqzx]', term):
+            if term.lower() not in self.postingDictJQZX.keys():
+                self.postingDictJQZX[term.lower()] = [doc_details]
+            else:
+                self.postingDictJQZX[term.lower()].append(doc_details)
+
+        elif re.match(r'^[0-9]', term):
+            if term.lower() not in self.postingDictNum.keys():
+                self.postingDictNum[term.lower()] = [doc_details]
+            else:
+                self.postingDictNum[term.lower()].append(doc_details)
+
+        elif re.match(r'^#', term):
+            if term.lower() not in self.postingDictHashtag.keys():
+                self.postingDictHashtag[term.lower()] = [doc_details]
+            else:
+                self.postingDictHashtag[term.lower()].append(doc_details)
+
+        elif re.match(r'^@', term):
+            if term.lower() not in self.postingDictStrudel.keys():
+                self.postingDictStrudel[term.lower()] = [doc_details]
+            else:
+                self.postingDictStrudel[term.lower()].append(doc_details)
+
+        else: #Simbol
+            if term.lower() not in self.postingDictSimbol.keys():
+                self.postingDictSimbol[term.lower()] = [doc_details]
+            else:
+                self.postingDictSimbol[term.lower()].append(doc_details)
+
 
     def add_new_doc(self, document):
         """
@@ -62,16 +131,16 @@ class Indexer:
         # Go over each term in the doc
         for term in document_dictionary.keys():
             try:
-
                 # continue if the term empty
-                if term.lower() in ['', 'rt', 'https', 't.co']:
+                if term.lower() in ['', 'rt', 'https', 'co']:
                     continue
+
                 #there is non meaning to one char so ont index thim
                 if len(term) == 1:
                     continue
 
-                post_file = self.posting_by_FirstChar(term)
-                pos = (document.tweet_id, document_dictionary[term],
+                #post_file = self.posting_by_FirstChar(term)
+                doc_details = (document.tweet_id, document_dictionary[term],
                                   document.doc_length,
                                   document.max_tf,document.nf,document.tweet_date) #,list(document_dictionary.keys()))
 
@@ -84,45 +153,47 @@ class Indexer:
                     # if its start with upper and exists as lower in the inverted indexer
                     if term.lower() in self.inverted_idx.keys():
                         self.inverted_idx[term.lower()] += 1
+                        self.posting(term,doc_details)
 
-                        if post_file == "A-Fa-f":
-                            if term.lower() not in self.postingDictAF.keys():
-                                self.postingDictAF[term.lower()] = [pos]
-                            else:
-                                self.postingDictAF[term.lower()].append(pos)
-                        elif post_file == "G-Pg-p":
-                            if term.lower() not in self.postingDictGP.keys():
-                                self.postingDictGP[term.lower()] = [pos]
-                            else:
-                                self.postingDictGP[term.lower()].append(pos)
-                        elif post_file == "Q-Zq-z":
-                            if term.lower() not in self.postingDictQZ.keys():
-                                self.postingDictQZ[term.lower()] = [pos]
-                            else:
-                                self.postingDictQZ[term.lower()].append(pos)
-                        elif post_file == "Simbol":
-                            if term.lower() not in self.postingDictSimbol.keys():
-                                self.postingDictSimbol[term.lower()] = [pos]
-                            else:
-                                self.postingDictSimbol[term.lower()].append(pos)
+                        #if post_file == "A-Fa-f":
+                        #    if term.lower() not in self.postingDictAF.keys():
+                        #        self.postingDictAF[term.lower()] = [pos]
+                        #    else:
+                        #        self.postingDictAF[term.lower()].append(pos)
+                        #elif post_file == "G-Pg-p":
+                        #    if term.lower() not in self.postingDictGP.keys():
+                        #        self.postingDictGP[term.lower()] = [pos]
+                        #    else:
+                        #        self.postingDictGP[term.lower()].append(pos)
+                        #elif post_file == "Q-Zq-z":
+                        #    if term.lower() not in self.postingDictQZ.keys():
+                        #        self.postingDictQZ[term.lower()] = [pos]
+                        #    else:
+                        #        self.postingDictQZ[term.lower()].append(pos)
+                        #elif post_file == "Simbol":
+                        #    if term.lower() not in self.postingDictSimbol.keys():
+                        #        self.postingDictSimbol[term.lower()] = [pos]
+                        #    else:
+                        #        self.postingDictSimbol[term.lower()].append(pos)
                         #sort the posting by tweet_id
 
                     # if its start with upper and not exists in the inverted indexer
                     elif term not in self.inverted_idx.keys():
                         self.inverted_idx[term] = 1
+                        self.posting(term, doc_details)
                         # if new in index new in posting
-                        if post_file == "A-Fa-f":
+                        #if post_file == "A-Fa-f":
                             #self.postingDictAF[term] = [pos]
-                            self.postingDictAF[term.lower()] = [pos]
-                        elif post_file == "G-Pg-p":
+                        #    self.postingDictAF[term.lower()] = [pos]
+                        #elif post_file == "G-Pg-p":
                             #self.postingDictGP[term] = [pos]
-                            self.postingDictGP[term.lower()] = [pos]
-                        elif post_file == "Q-Zq-z":
+                        #    self.postingDictGP[term.lower()] = [pos]
+                        #elif post_file == "Q-Zq-z":
                             #self.postingDictQZ[term] = [pos]
-                            self.postingDictQZ[term.lower()] = [pos]
-                        elif post_file == "Simbol":
+                        #    self.postingDictQZ[term.lower()] = [pos]
+                        #elif post_file == "Simbol":
                             #self.postingDictSimbol[term] = [pos]
-                            self.postingDictSimbol[term.lower()] = [pos]
+                         #   self.postingDictSimbol[term.lower()] = [pos]
 
                         # sort the posting by tweet_id
                         #self.sorted_posting(term, post_file)
@@ -130,43 +201,43 @@ class Indexer:
                     else:
                         # if its start with upper and exists in the inverted indexer
                         self.inverted_idx[term] += 1
-
-                        if post_file == "A-Fa-f":
-                            if term.lower() not in self.postingDictAF.keys():
+                        self.posting(term, doc_details)
+                        #if post_file == "A-Fa-f":
+                        #    if term.lower() not in self.postingDictAF.keys():
                                 #self.postingDictAF[term] = [pos]
-                                self.postingDictAF[term.lower()] = [pos]
-                            else:
+                        #        self.postingDictAF[term.lower()] = [pos]
+                        #    else:
                                 #self.postingDictAF[term].append(pos)
-                                self.postingDictAF[term.lower()].append(pos)
-                        elif post_file == "G-Pg-p":
-                            if term.lower() not in self.postingDictGP.keys():
+                        #        self.postingDictAF[term.lower()].append(pos)
+                        #elif post_file == "G-Pg-p":
+                            #if term.lower() not in self.postingDictGP.keys():
                                 #self.postingDictGP[term] = [pos]
-                                self.postingDictGP[term.lower()] = [pos]
-                            else:
+                             #   self.postingDictGP[term.lower()] = [pos]
+                            #else:
                                 #self.postingDictGP[term].append(pos)
-                                self.postingDictGP[term.lower()].append(pos)
-                        elif post_file == "Q-Zq-z":
-                            if term.lower() not in self.postingDictQZ.keys():
+                            #    self.postingDictGP[term.lower()].append(pos)
+                        #elif post_file == "Q-Zq-z":
+                        #    if term.lower() not in self.postingDictQZ.keys():
                                 #self.postingDictQZ[term] = [pos]
-                                self.postingDictQZ[term.lower()] = [pos]
-                            else:
+                        #        self.postingDictQZ[term.lower()] = [pos]
+                        #    else:
                                 #self.postingDictQZ[term].append(pos)
-                                self.postingDictQZ[term.lower()].append(pos)
-                        elif post_file == "Simbol":
-                            if term.lower() not in self.postingDictSimbol.keys():
+                        #        self.postingDictQZ[term.lower()].append(pos)
+                        #elif post_file == "Simbol":
+                        #    if term.lower() not in self.postingDictSimbol.keys():
                                 #self.postingDictSimbol[term] = [pos]
-                                self.postingDictSimbol[term.lower()] = [pos]
-                            else:
+                        #        self.postingDictSimbol[term.lower()] = [pos]
+                        #    else:
                                 #self.postingDictSimbol[term].append(pos)
-                                self.postingDictSimbol[term.lower()].append(pos)
+                        #        self.postingDictSimbol[term.lower()].append(pos)
 
                 else:
                     # if the term Start with Lower and exists as First charchter Upper in the inverted indexer,remove from the inverted index and postingfile
                     if term[0].upper()+term[1:] in self.inverted_idx.keys() and re.match('[a-z]',term[0]):
                         inv_data = self.inverted_idx.pop(term[0].upper() + term[1:])
                         self.inverted_idx[term] = inv_data + 1
-
-                        if post_file == "A-Fa-f":
+                        self.posting(term, doc_details)
+                        #if post_file == "A-Fa-f":
                             #if term[0].upper()+term[1:] in self.postingDictAF.keys():
                             #    self.postingDictAF[term] = []
                             #    temp = self.postingDictAF.pop(term[0].upper()+term[1:])
@@ -175,12 +246,12 @@ class Indexer:
                             #    self.postingDictAF[term].append(pos)
                             #else:
                             #    self.postingDictAF[term] = [pos]
-                            if term.lower() not in self.postingDictAF.keys():
-                                self.postingDictAF[term.lower()] = [pos]
-                            else:
-                                self.postingDictAF[term.lower()].append(pos)
+                            #if term.lower() not in self.postingDictAF.keys():
+                            #    self.postingDictAF[term.lower()] = [pos]
+                            #else:
+                            #    self.postingDictAF[term.lower()].append(pos)
 
-                        elif post_file == "G-Pg-p":
+                        #elif post_file == "G-Pg-p":
                             #if term[0].upper()+term[1:]  in self.postingDictGP.keys():
                             #    self.postingDictGP[term] = []
                             #    temp = self.postingDictGP.pop(term[0].upper() + term[1:])
@@ -189,12 +260,12 @@ class Indexer:
                             #    self.postingDictGP[term].append(pos)
                             #else:
                             #    self.postingDictGP[term] = [pos]
-                            if term.lower() not in self.postingDictGP.keys():
-                                self.postingDictGP[term.lower()] = [pos]
-                            else:
-                                self.postingDictGP[term.lower()].append(pos)
+                            #if term.lower() not in self.postingDictGP.keys():
+                            #    self.postingDictGP[term.lower()] = [pos]
+                            #else:
+                            #    self.postingDictGP[term.lower()].append(pos)
 
-                        elif post_file == "Q-Zq-z":
+                        #elif post_file == "Q-Zq-z":
                             #if term[0].upper()+term[1:] in self.postingDictQZ.keys():
                             #    self.postingDictQZ[term] = []
                             #    temp = self.postingDictQZ.pop(term[0].upper() + term[1:])
@@ -203,12 +274,12 @@ class Indexer:
                             #    self.postingDictQZ[term].append(pos)
                             #else:
                             #    self.postingDictQZ[term] = [pos]
-                            if term.lower() not in self.postingDictQZ.keys():
-                                self.postingDictQZ[term.lower()] = [pos]
-                            else:
-                                self.postingDictQZ[term.lower()].append(pos)
+                            #if term.lower() not in self.postingDictQZ.keys():
+                            #    self.postingDictQZ[term.lower()] = [pos]
+                            #else:
+                            #    self.postingDictQZ[term.lower()].append(pos)
 
-                        elif post_file == "Simbol":
+                        #elif post_file == "Simbol":
                             #if term[0].upper()+term[1:]  in self.postingDictSimbol.keys():
                             #    self.postingDictSimbol[term] = []
                             #    temp = self.postingDictSimbol.pop(term[0].upper() + term[1:])
@@ -217,65 +288,76 @@ class Indexer:
                             #    self.postingDictSimbol[term].append(pos)
                             #else:
                             #    self.postingDictSimbol[term] = [pos]
-                            if term.lower() not in self.postingDictSimbol.keys():
-                                self.postingDictSimbol[term.lower()] = [pos]
-                            else:
-                                self.postingDictSimbol[term.lower()].append(pos)
+                            #if term.lower() not in self.postingDictSimbol.keys():
+                            #    self.postingDictSimbol[term.lower()] = [pos]
+                            #else:
+                            #    self.postingDictSimbol[term.lower()].append(pos)
 
 
                     # if the term Start with Lower or digit or #@$ and not exists in the inverted indexer
                     elif term not in self.inverted_idx.keys():
                             self.inverted_idx[term] = 1
-
-                            if post_file == "A-Fa-f":
+                            self.posting(term, doc_details)
+                            #if post_file == "A-Fa-f":
                                 #self.postingDictAF[term] = [pos]
-                                self.postingDictAF[term.lower()] = [pos]
-                            elif post_file == "G-Pg-p":
+                                #self.postingDictAF[term.lower()] = [pos]
+                            #elif post_file == "G-Pg-p":
                                 #self.postingDictGP[term] = [pos]
-                                self.postingDictGP[term.lower()] = [pos]
-                            elif post_file == "Q-Zq-z":
+                            #    self.postingDictGP[term.lower()] = [pos]
+                            #elif post_file == "Q-Zq-z":
                                 #self.postingDictQZ[term] = [pos]
-                                self.postingDictQZ[term.lower()] = [pos]
-                            elif post_file == "Simbol":
+                            #    self.postingDictQZ[term.lower()] = [pos]
+                            #elif post_file == "Simbol":
                                 #self.postingDictSimbol[term] = [pos]
-                                self.postingDictSimbol[term.lower()] = [pos]
-
+                            #    self.postingDictSimbol[term.lower()] = [pos]
 
                     else:
                         # if its start with Lower and exists in the inverted indexer
                         self.inverted_idx[term] += 1
-
-                        if post_file == "A-Fa-f":
-                            if term.lower() not in self.postingDictAF.keys():
-                                #self.postingDictAF[term] = [pos]
-                                self.postingDictAF[term.lower()] = [pos]
-                            else:
+                        self.posting(term, doc_details)
+                        #if post_file == "A-Fa-f":
+                        #    if term.lower() not in self.postingDictAF.keys():
+                        #        #self.postingDictAF[term] = [pos]
+                        #        self.postingDictAF[term.lower()] = [pos]
+                        #    else:
                                 #self.postingDictAF[term].append(pos)
-                                self.postingDictAF[term.lower()].append(pos)
-                        elif post_file == "G-Pg-p":
-                            if term.lower() not in self.postingDictGP.keys():
+                        #        self.postingDictAF[term.lower()].append(pos)
+                        #elif post_file == "G-Pg-p":
+                        #    if term.lower() not in self.postingDictGP.keys():
                                 #self.postingDictGP[term] = [pos]
-                                self.postingDictGP[term.lower()] = [pos]
-                            else:
+                        #        self.postingDictGP[term.lower()] = [pos]
+                        #    else:
                                 #self.postingDictGP[term].append(pos)
-                                self.postingDictGP[term.lower()].append(pos)
-                        elif post_file == "Q-Zq-z":
-                            if term.lower() not in self.postingDictQZ.keys():
+                        #        self.postingDictGP[term.lower()].append(pos)
+                        #elif post_file == "Q-Zq-z":
+                        #    if term.lower() not in self.postingDictQZ.keys():
                                 #self.postingDictQZ[term] = [pos]
-                                self.postingDictQZ[term.lower()] = [pos]
-                            else:
+                        #        self.postingDictQZ[term.lower()] = [pos]
+                        #    else:
                                 #self.postingDictQZ[term].append(pos)
-                                self.postingDictQZ[term.lower()].append(pos)
-                        elif post_file == "Simbol":
-                            if term.lower() not in self.postingDictSimbol.keys():
+                        #        self.postingDictQZ[term.lower()].append(pos)
+                        #elif post_file == "Simbol":
+                        #    if term.lower() not in self.postingDictSimbol.keys():
                                 #self.postingDictSimbol[term] = [pos]
-                                self.postingDictSimbol[term.lower()] = [pos]
-                            else:
+                         #       self.postingDictSimbol[term.lower()] = [pos]
+                         #   else:
                                 #self.postingDictSimbol[term].append(pos)
-                                self.postingDictSimbol[term.lower()].append(pos)
+                         #       self.postingDictSimbol[term.lower()].append(pos)
 
                         # sort the posting by tweet_id
                         #self.sorted_posting(term, post_file)
-
             except:
                 print('problem with the following key {}'.format(term))
+
+        for e in document.entities:
+            if e in self.inverted_idxEntities:
+                self.inverted_idx[e]+=1
+                self.postingEntities[e].append((document.tweet_id, document_dictionary[term],
+                                  document.doc_length,
+                                  document.max_tf,document.nf,document.tweet_date))
+            else:
+                self.inverted_idx[e] = 1
+                self.postingEntities[e] = [(document.tweet_id, document_dictionary[term],
+                                  document.doc_length,
+                                  document.max_tf,document.nf,document.tweet_date)]
+

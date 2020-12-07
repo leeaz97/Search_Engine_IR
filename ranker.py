@@ -1,11 +1,14 @@
 import math
 from numpy import dot
 from numpy.linalg import norm
-
+import numpy as np
 
 def con_sin(vec_doc, vec_query):
-    cos_sim = dot(vec_doc, vec_query) / (norm(vec_doc) * norm(vec_query))
-    return cos_sim
+    if not np.all((norm(vec_doc) * norm(vec_query))==0):
+        cos_sim = dot(vec_doc, vec_query) / (norm(vec_doc) * norm(vec_query))
+        return cos_sim
+    else:
+        return 0
 
 class Ranker:
     def __init__(self):
@@ -25,7 +28,7 @@ class Ranker:
         for k,v in relevant_doc.items():
             for i in v.terms:
                 if i[0] in query_dict.keys():
-                    rank = ( 0.4 * ((i[1] * query_dict[i[0]]) * (v.nf * nf_query)) + (1 - 0.4) * con_sin(v.vec_doc, query_vec))*v.num_show
+                    rank = ( (0.4 * ((i[1] * query_dict[i[0]]) * (v.nf * nf_query))) + ((1 - 0.4) * con_sin(v.vec_doc, query_vec)))*v.num_show
                     ranking_doc[k] = rank
 
         return sorted(ranking_doc.items(), key=lambda item: item[1], reverse=True)
