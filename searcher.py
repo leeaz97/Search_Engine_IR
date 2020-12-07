@@ -127,7 +127,7 @@ class Searcher:
                 res.append(t)
         return res
 
-    def relevant_docs_from_posting(self, query,model):
+    def relevant_docs_from_posting(self, query,query_entities,model):
         """
         This function loads the posting list and count the amount of relevant documents per term.
         :param query: query
@@ -158,13 +158,23 @@ class Searcher:
         if self.stemming:
             s = Stemmer()
             full_tokens = s.stem_term(full_tokens)
+            query_entities = s.stem_term(query_entities)
 
+    #handel the terms
         list_term = self.exists_term_in_inverted(full_tokens)
 
         #sort the tokens of the query
         dic_by_first_ch = splitLst(list_term)
         for k,v in dic_by_first_ch.items():
             self.load_posting(k,v)
+
+        # handel the entities
+        entities_posting = utils.load_obj(os.path.join(self.outputPath, "postingEntities"))
+        entities_inv = utils.load_obj(os.path.join(self.outputPath, "inverted_idx_entities"))
+
+        for e in query_entities:
+            if e in entities_inv:
+                self.posting_doc[e] = entities_posting[e.lower()]
 
         for t, v in self.posting_doc.items():
             # twiite id
@@ -189,6 +199,8 @@ class Searcher:
                 else:
                     relevant_docs[doc_id].num_show += 1
                     relevant_docs[doc_id].terms.append((t, doc_tf * idf_doc))
+
+
 
         #for t in full_tokens:
             #try:
@@ -263,4 +275,5 @@ class Searcher:
             #except:
             #    print('term {} not found in posting'.format(t))
 
-        return relevant_docs # ,self.freq_terms_query(full_tokens)
+        return relevant_docs
+        # ,self.freq_terms_query(full_tokens)

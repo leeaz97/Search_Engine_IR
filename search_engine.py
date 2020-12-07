@@ -126,7 +126,7 @@ def run_engine(config):
             filepath = subdir + os.sep + file
 
             if file.endswith(".parquet"):
-                documents_list = r.read_file(file_name=filepath)
+                documents_list = r.read_file_new(file_name=filepath)
                 # Iterate over every document in the file
                 for idx, document in enumerate(documents_list):
                     # parse the document
@@ -143,7 +143,7 @@ def run_engine(config):
                     indexer.add_new_doc(parsed_document)
 
                     # index to posting the document data
-                    if num_doc_topost <= 200000:
+                    if num_doc_topost < 500000:
                         num_doc_topost += 1
                     else:
                         #indexer.sorted_posting()
@@ -161,20 +161,21 @@ def run_engine(config):
                         posting_num += 1
                         num_doc_topost = 0
 
-                    print("num of doc:", number_of_documents)
+                    #print("num of doc:", number_of_documents)
 
-                    if number_of_documents == 500000:
-                        break
-            if number_of_documents == 500000:
-                break
-        if number_of_documents == 500000:
-            break
+                    #if number_of_documents == 300000:
+                    #    break
+            #if number_of_documents == 300000:
+            #    break
+        #if number_of_documents == 300000:
+        #    break
 
     print(posting_num)
 
     #need to save the posting that not save in the posting
-    #if number_of_documents % 500000 > 0:
-    save_posting_and_doc_collection(indexer,stem_outPath,posting_num)
+
+    if num_doc_topost > 0:
+        save_posting_and_doc_collection(indexer,stem_outPath,posting_num)
 
     #indexer.sorted_inverted()
 
@@ -182,6 +183,7 @@ def run_engine(config):
 
     indexer.remove_uniqe_entities()
     utils.save_obj(sorted_dic_by_key(indexer.inverted_idxEntities), os.path.join(stem_outPath, "inverted_idx_entities"))
+    utils.save_obj(sorted_dic_by_key(indexer.postingEntities), os.path.join(stem_outPath, "postingEntities"))
 
     #print('Finished parsing and indexing. Starting to export files')
 
@@ -197,11 +199,12 @@ def run_engine(config):
 def search_and_rank_query(query,inverted_index,document_collection,k,config,model):
     p = Parse(config)
     #parse the query ,return list of all the terms
-    query_as_list = p.parse_sentence(query)[0]
+    query_as_list,query_entities = p.parse_sentence(query)
+
 
     #searcher
     searcher = Searcher(inverted_index,document_collection,config)
-    relevant_docs = searcher.relevant_docs_from_posting(query_as_list,model) #, query_tf = searcher.relevant_docs_from_posting(query_as_list,model)
+    relevant_docs = searcher.relevant_docs_from_posting(query_as_list,query_entities,model) #, query_tf = searcher.relevant_docs_from_posting(query_as_list,model)
     #calc the freq of query and the vector of the query
     query_tf = searcher.freq_terms_query(query_as_list)
     vec_query = searcher.avg_vector(query_tf.keys(),model)
@@ -211,7 +214,7 @@ def search_and_rank_query(query,inverted_index,document_collection,k,config,mode
 
 
 def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=False,queries=r"C:\Users\lazrati\Desktop\leeStudy\IR\queries.txt",num_doc_to_retrive=2000):
-    #now = datetime.now()
+    now = datetime.now()
 
     config = ConfigClass(corpus_path,output_path,stemming)
     #config.corpusPath = corpus_path
@@ -220,17 +223,17 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
 
     corpus_num_docs,posting_num = run_engine(config)
     now_after_all = datetime.now()
-    #print("Diff Time parse =", now_after_all-now)
+    print("Diff Time parse =", now_after_all-now)
 
     now = datetime.now()
     main_merge(config.get__outputPath(), posting_num)
     now_after_all = datetime.now()
     print("Diff Time after mearge =", now_after_all-now)
 
-    #config.number_of_documents = corpus_num_docs
-    config.number_of_documents = 500000
+    config.number_of_documents = corpus_num_docs
+    #config.number_of_documents = 500000
     #query = input("Please enter a query: ")
-    ''' queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
+    queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
 "The seasonal flu kills more people every year in the U.S. than COVID-19 has to date.",
 "Coronavirus is less dangerous than the flu",
 "The coronavirus pandemic is a cover for a plan to implant trackable microchips and that the Microsoft co-founder Bill Gates is behind it",
@@ -260,7 +263,6 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
 "The COVID-19 coronavirus pandemic caused a nationwide shortage of U.S. coins in circulation during the summer of 2020.",
 "Coins shortage due to coronavirus",
 "People should NOT wear masks while exercising"]
-'''
 
     #k = int(input("Please enter number of docs to retrieve: "))
 
@@ -270,7 +272,7 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
 
     if isinstance(queries, str):
         queries = list(
-            filter(None, (line.rstrip() for line in open(r"C:\Users\lazrati\Desktop\leeStudy\IR\queries.txt",encoding="utf8"))))
+            filter(None, (line.rstrip() for line in open(queries,encoding="utf8"))))
 
     #now_after_all = datetime.now()
     #print("Diff Time after mearge =", now_after_all-now)
@@ -283,7 +285,7 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
 
         now_after_all = datetime.now()
         print("Diff Time after load googlenews =", now_after_all - now)
-        with open('results.csv', 'w', newline='') as file:
+        with open('results.csv', 'w', newline='', encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(['query_id', 'tweet id', 'score'])
             #if isinstance(queries, list):
@@ -294,5 +296,5 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
                     writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
 
-    #now_after_all = datetime.now()
-    #print("Diff Time after queries =", now_after_all - now)
+    now_after_all = datetime.now()
+    print("Diff Time after queries =", now_after_all - now)

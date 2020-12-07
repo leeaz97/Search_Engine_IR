@@ -349,6 +349,7 @@ class Parse:
         if self.stemmer:
             s = Stemmer()
             text_tokens = s.stem_term(text_tokens)
+            entiteis = s.stem_term(entiteis)
 
         # remove_punctuation + names_and_entities + tags + hashtags + date_and_time
         return text_tokens,entiteis
