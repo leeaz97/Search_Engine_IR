@@ -211,16 +211,16 @@ def search_and_rank_query(query,inverted_index,document_collection,k,config,mode
 
 
 def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=r"C:\Users\lazrati\Desktop\leeStudy\Data",stemming=False,queries=r"C:\Users\lazrati\Desktop\leeStudy\IR\queries.txt",num_doc_to_retrive=2000):
-    now = datetime.now()
+    #now = datetime.now()
 
-    config = ConfigClass()
-    config.corpusPath = corpus_path
-    config.savedFileMainFolder = output_path
-    config.toStem = stemming
+    config = ConfigClass(corpus_path,output_path,stemming)
+    #config.corpusPath = corpus_path
+    #config.savedFileMainFolder = output_path
+    #config.toStem = stemming
 
     corpus_num_docs,posting_num = run_engine(config)
     now_after_all = datetime.now()
-    print("Diff Time parse =", now_after_all-now)
+    #print("Diff Time parse =", now_after_all-now)
 
     now = datetime.now()
     main_merge(config.get__outputPath(), posting_num)
@@ -230,7 +230,7 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
     #config.number_of_documents = corpus_num_docs
     config.number_of_documents = 500000
     #query = input("Please enter a query: ")
-    queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
+    ''' queries = ["Dr. Anthony Fauci wrote in a 2005 paper published in Virology Journal that hydroxychloroquine was effective in treating SARS.",
 "The seasonal flu kills more people every year in the U.S. than COVID-19 has to date.",
 "Coronavirus is less dangerous than the flu",
 "The coronavirus pandemic is a cover for a plan to implant trackable microchips and that the Microsoft co-founder Bill Gates is behind it",
@@ -260,6 +260,7 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
 "The COVID-19 coronavirus pandemic caused a nationwide shortage of U.S. coins in circulation during the summer of 2020.",
 "Coins shortage due to coronavirus",
 "People should NOT wear masks while exercising"]
+'''
 
     #k = int(input("Please enter number of docs to retrieve: "))
 
@@ -271,8 +272,8 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
         queries = list(
             filter(None, (line.rstrip() for line in open(r"C:\Users\lazrati\Desktop\leeStudy\IR\queries.txt",encoding="utf8"))))
 
-    now_after_all = datetime.now()
-    print("Diff Time after mearge =", now_after_all-now)
+    #now_after_all = datetime.now()
+    #print("Diff Time after mearge =", now_after_all-now)
 
     if queries:
         inverted_index = utils.load_inverted_index(os.path.join(config.get__outputPath(), "inverted_idx"))
@@ -293,5 +294,5 @@ def main(corpus_path=r"C:\Users\lazrati\Desktop\leeStudy\Data\Data",output_path=
                     writer.writerow([query, doc_tuple[0], doc_tuple[1]])
 
 
-    now_after_all = datetime.now()
-    print("Diff Time after queries =", now_after_all - now)
+    #now_after_all = datetime.now()
+    #print("Diff Time after queries =", now_after_all - now)

@@ -1,12 +1,12 @@
 import os
 
 class ConfigClass:
-    def __init__(self):
-        self.corpusPath = r'C:\Users\lazrati\Desktop\leeStudy\Data\Data\date=07-09-2020'
-        self.savedFileMainFolder = r'C:\Users\lazrati\Desktop\leeStudy\Data'
+    def __init__(self,corpus_path='',output_path='',stemming=False):
+        self.corpusPath = corpus_path
+        self.savedFileMainFolder = output_path
         self.saveFilesWithStem = os.path.join(self.savedFileMainFolder,"WithStem")
         self.saveFilesWithoutStem = os.path.join(self.savedFileMainFolder,"WithoutStem")
-        self.toStem = False
+        self.toStem = stemming
         self.number_of_documents = 0
 
 
